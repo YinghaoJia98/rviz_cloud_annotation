@@ -43,6 +43,7 @@
 #include <ostream>
 #include <queue>
 #include <set>
+#include <iomanip>
 
 // PCL
 #include <pcl/point_cloud.h>
@@ -57,7 +58,7 @@
 
 class RVizCloudAnnotationPoints
 {
-  public:
+public:
   typedef uint64_t uint64;
   typedef uint32_t uint32;
   typedef uint8_t uint8;
@@ -76,8 +77,8 @@ class RVizCloudAnnotationPoints
     uint32 weight_step_id;
     uint32 label_id;
 
-    CPData(uint64 pi,uint32 wsi,uint32 li): point_id(pi), weight_step_id(wsi), label_id(li) {}
-    CPData(): point_id(0), weight_step_id(0), label_id(0) {}
+    CPData(uint64 pi, uint32 wsi, uint32 li) : point_id(pi), weight_step_id(wsi), label_id(li) {}
+    CPData() : point_id(0), weight_step_id(0), label_id(0) {}
   };
   typedef std::vector<CPData> CPDataVector;
   typedef RVizCloudAnnotationPointsPointPlane PointPlane;
@@ -92,32 +93,32 @@ class RVizCloudAnnotationPoints
 
   struct IOE // IO exception
   {
-    IOE(const std::string & d): description(d) {}
+    IOE(const std::string &d) : description(d) {}
     std::string description;
   };
 
-  static RVizCloudAnnotationPoints::Ptr Deserialize(std::istream & ifile,
-    const uint32 weight_steps,
-    PointNeighborhood::ConstPtr neighborhood);
-  void Serialize(std::ostream & ofile) const;
+  static RVizCloudAnnotationPoints::Ptr Deserialize(std::istream &ifile,
+                                                    const uint32 weight_steps,
+                                                    PointNeighborhood::ConstPtr neighborhood);
+  void Serialize(std::ostream &ofile) const;
 
   // returns the list of affected labels
-  Uint64Vector SetControlPoint(const uint64 point_id,const uint32 weight_step,const uint64 label);
-  Uint64Vector SetControlPointVector(const Uint64Vector & ids,
-                                   const Uint32Vector & weight_steps,
-                                   const Uint64Vector & labels);
-  Uint64Vector SetControlPoint(const CPData & control_point_data);
-  Uint64Vector SetControlPointList(const CPDataVector & control_points_data,const uint64 label);
-  Uint64Vector SetControlPointList(const CPDataVector & control_points_data);
+  Uint64Vector SetControlPoint(const uint64 point_id, const uint32 weight_step, const uint64 label);
+  Uint64Vector SetControlPointVector(const Uint64Vector &ids,
+                                     const Uint32Vector &weight_steps,
+                                     const Uint64Vector &labels);
+  Uint64Vector SetControlPoint(const CPData &control_point_data);
+  Uint64Vector SetControlPointList(const CPDataVector &control_points_data, const uint64 label);
+  Uint64Vector SetControlPointList(const CPDataVector &control_points_data);
 
   Uint64Vector Clear();
   Uint64Vector ClearLabel(const uint64 label); // clear label, returns list of affected labels
-  Uint64Vector SetNameForLabel(const uint64 label,const std::string & name);
+  Uint64Vector SetNameForLabel(const uint64 label, const std::string &name);
 
   CPDataVector GetControlPointList(const uint64 label) const;
   Uint64Vector GetLabelPointList(const uint64 label) const;
 
-  uint64 GetWeightStepsCount() const {return m_weight_steps_count; }
+  uint64 GetWeightStepsCount() const { return m_weight_steps_count; }
 
   // 0 if none
   uint64 GetLabelForPoint(const uint64 idx) const
@@ -141,9 +142,9 @@ class RVizCloudAnnotationPoints
     return m_ext_label_names[label - 1];
   }
 
-  uint64 GetNextLabel() const {return m_control_points_for_label.size() + 1; }
-  uint64 GetMaxLabel() const {return m_control_points_for_label.size(); }
-  uint64 GetCloudSize() const {return m_cloud_size; }
+  uint64 GetNextLabel() const { return m_control_points_for_label.size() + 1; }
+  uint64 GetMaxLabel() const { return m_control_points_for_label.size(); }
+  uint64 GetCloudSize() const { return m_cloud_size; }
 
   uint64 GetLabelPointCount(const uint64 label) const
   {
@@ -153,50 +154,49 @@ class RVizCloudAnnotationPoints
   }
 
   template <class PointT>
-    void LabelCloud(pcl::PointCloud<PointT> & cloud) const;
+  void LabelCloud(pcl::PointCloud<PointT> &cloud) const;
   template <class PointT>
-    void LabelCloudWithColor(pcl::PointCloud<PointT> & cloud) const;
+  void LabelCloudWithColor(pcl::PointCloud<PointT> &cloud) const;
 
-  private:
+private:
   struct ControlPoint
   {
     uint32 label_id;
     uint32 weight_step_id;
     uint64 point_id;
 
-    ControlPoint(const uint64 point_id,const uint32 weight_step,const uint32 label_id):
-      label_id(label_id), weight_step_id(weight_step), point_id(point_id) {}
-    void Invalidate() {label_id = 0; }
-    bool Valid() const {return label_id; }
-    bool Invalid() const {return !label_id; }
+    ControlPoint(const uint64 point_id, const uint32 weight_step, const uint32 label_id) : label_id(label_id), weight_step_id(weight_step), point_id(point_id) {}
+    void Invalidate() { label_id = 0; }
+    bool Valid() const { return label_id; }
+    bool Invalid() const { return !label_id; }
 
-    CPData ToCPData() const {return CPData(point_id,weight_step_id,label_id); }
+    CPData ToCPData() const { return CPData(point_id, weight_step_id, label_id); }
   };
   typedef std::vector<ControlPoint> ControlPointVector;
 
   void ExpandLabelsUntil(const uint64 label);
   void ExpandPointPlane(const uint32 weight_id);
 
-  void RegenerateLabelAssoc(BoolVector & touched);
+  void RegenerateLabelAssoc(BoolVector &touched);
   void UpdateLabelAssocAdded(const uint64 added_index,
                              const uint32 added_weight,
-                             BoolVector & touched);
+                             BoolVector &touched);
   void UpdateLabelAssocAddedPlane(const uint64 added_index,
                                   const uint32 added_weight,
-                                  BoolVector & touched,
-                                  Uint64Set & touched_plane);
-  void UpdateLabelAssocDeleted(const uint64 removed_index,BoolVector & touched_labels);
-  void UpdateLabelAssocDeletedVector(const Uint64Vector & removed_indices,BoolVector & touched);
+                                  BoolVector &touched,
+                                  Uint64Set &touched_plane);
+  void UpdateLabelAssocDeleted(const uint64 removed_index, BoolVector &touched_labels);
+  void UpdateLabelAssocDeletedVector(const Uint64Vector &removed_indices, BoolVector &touched);
 
-  void UpdateMainWeightPlane(const Uint64Set & touched_points,BoolVector & touched);
-  void RebuildMainWeightPlane(BoolVector & touched);
+  void UpdateMainWeightPlane(const Uint64Set &touched_points, BoolVector &touched);
+  void RebuildMainWeightPlane(BoolVector &touched);
 
   uint64 InternalSetControlPoint(const uint64 point_id,
                                  const uint32 weight_step,
                                  const uint32 label);
   template <typename T>
-    static void EraseFromVector(std::vector<T> & vector,const T value);
-  Uint64Vector TouchedBoolVectorToExtLabel(const BoolVector & touched) const;
+  static void EraseFromVector(std::vector<T> &vector, const T value);
+  Uint64Vector TouchedBoolVectorToExtLabel(const BoolVector &touched) const;
 
   // assoc from cloud point to control point, 0 otherwise
   Uint64Vector m_control_points_assoc;
@@ -223,14 +223,14 @@ class RVizCloudAnnotationPoints
 };
 
 template <class PointT>
-  void RVizCloudAnnotationPoints::LabelCloud(pcl::PointCloud<PointT> & cloud) const
+void RVizCloudAnnotationPoints::LabelCloud(pcl::PointCloud<PointT> &cloud) const
 {
   for (uint64 i = 0; i < m_cloud_size; i++)
     cloud[i].label = (m_labels_assoc[i] ? (m_control_points[m_labels_assoc[i] - 1].label_id) : 0);
 }
 
 template <class PointT>
-  void RVizCloudAnnotationPoints::LabelCloudWithColor(pcl::PointCloud<PointT> & cloud) const
+void RVizCloudAnnotationPoints::LabelCloudWithColor(pcl::PointCloud<PointT> &cloud) const
 {
   LabelCloud(cloud);
   for (uint64 i = 0; i < m_cloud_size; i++)
