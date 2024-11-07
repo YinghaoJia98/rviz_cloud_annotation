@@ -3,6 +3,8 @@
 RViz Cloud Annotation Tool
 --------------------------
 
+Origin code is forked from [Monica's work](https://github.com/RMonica/rviz_cloud_annotation.git).
+
 This is an annotation tool for 3D point clouds, based on the ROS (Robot Operating System) visualizer RViz.
 
 The annotation tool lets the user partition a point cloud into parts. A text description may be assigned to each part.

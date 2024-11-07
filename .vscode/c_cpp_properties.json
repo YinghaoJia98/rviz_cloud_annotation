@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "${default}",
+                "limitSymbolsToIncludedHeaders": false
+            },
+            "includePath": [
+                "/home/december/CloudAnnotation_ws/devel/include/**",
+                "/home/december/CloudAnnotation_ws/src/rviz_cloud_annotation/rviz_cloud_annotation/src/**",
+                "/home/december/CloudAnnotation_ws/src/rviz_cloud_annotation/rviz_3d_view_controller/src/**",
+                "/opt/ros/noetic/include/**",
+                "/usr/include/**"
+            ],
+            "name": "ROS",
+            "intelliSenseMode": "linux-gcc-x64",
+            "compilerPath": "/usr/bin/gcc-9",
+            "cStandard": "c17",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}
