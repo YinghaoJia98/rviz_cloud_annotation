@@ -16,5 +16,13 @@
         "/home/december/CloudAnnotation_ws/src/rviz_cloud_annotation/rviz_3d_view_controller/src/**",
         "/usr/include/**"
     ],
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "python.autoComplete.extraPaths": [
+        "/home/december/CloudAnnotation_ws/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/december/CloudAnnotation_ws/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages"
+    ]
 }

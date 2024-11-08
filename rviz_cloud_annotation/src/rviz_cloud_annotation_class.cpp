@@ -47,30 +47,30 @@
 // ROS
 #include <eigen_conversions/eigen_msg.h>
 
-#define CLOUD_MARKER_NAME            "cloud"
-#define CONTROL_POINT_MARKER_PREFIX  "control_points_"
-#define LABEL_POINT_MARKER_PREFIX    "label_points_"
+#define CLOUD_MARKER_NAME "cloud"
+#define CONTROL_POINT_MARKER_PREFIX "control_points_"
+#define LABEL_POINT_MARKER_PREFIX "label_points_"
 
-RVizCloudAnnotation::RVizCloudAnnotation(ros::NodeHandle & nh): m_nh(nh)
+RVizCloudAnnotation::RVizCloudAnnotation(ros::NodeHandle &nh) : m_nh(nh)
 {
   std::string param_string;
   std::string param_string2;
   double param_double;
   int param_int;
 
-  m_nh.param<std::string>(PARAM_NAME_UPDATE_TOPIC,param_string,PARAM_DEFAULT_UPDATE_TOPIC);
+  m_nh.param<std::string>(PARAM_NAME_UPDATE_TOPIC, param_string, PARAM_DEFAULT_UPDATE_TOPIC);
   m_interactive_marker_server = InteractiveMarkerServerPtr(new InteractiveMarkerServer(param_string));
 
-  m_nh.param<std::string>(PARAM_NAME_CLOUD_FILENAME,param_string,PARAM_DEFAULT_CLOUD_FILENAME);
-  m_nh.param<std::string>(PARAM_NAME_NORMAL_SOURCE,param_string2,PARAM_DEFAULT_NORMAL_SOURCE);
+  m_nh.param<std::string>(PARAM_NAME_CLOUD_FILENAME, param_string, PARAM_DEFAULT_CLOUD_FILENAME);
+  m_nh.param<std::string>(PARAM_NAME_NORMAL_SOURCE, param_string2, PARAM_DEFAULT_NORMAL_SOURCE);
   m_cloud = PointXYZRGBNormalCloud::Ptr(new PointXYZRGBNormalCloud);
   try
   {
-    LoadCloud(param_string,param_string2,*m_cloud);
+    LoadCloud(param_string, param_string2, *m_cloud);
   }
-  catch (const std::string & msg)
+  catch (const std::string &msg)
   {
-    ROS_FATAL("rviz_cloud_annotation: %s",msg.c_str());
+    ROS_FATAL("rviz_cloud_annotation: %s", msg.c_str());
     std::exit(1);
   }
   m_kdtree = KdTree::Ptr(new KdTree);
@@ -79,66 +79,66 @@ RVizCloudAnnotation::RVizCloudAnnotation(ros::NodeHandle & nh): m_nh(nh)
   {
     PointNeighborhood::Conf conf;
 
-    m_nh.param<int>(PARAM_NAME_NEIGH_SEARCH_TYPE,param_int,PARAM_DEFAULT_NEIGH_SEARCH_TYPE);
-    m_nh.param<std::string>(PARAM_NAME_NEIGH_SEARCH_PARAMS,param_string,PARAM_DEFAULT_NEIGH_SEARCH_PARAMS);
+    m_nh.param<int>(PARAM_NAME_NEIGH_SEARCH_TYPE, param_int, PARAM_DEFAULT_NEIGH_SEARCH_TYPE);
+    m_nh.param<std::string>(PARAM_NAME_NEIGH_SEARCH_PARAMS, param_string, PARAM_DEFAULT_NEIGH_SEARCH_PARAMS);
     if (param_int == PARAM_DEFAULT_NEIGH_SEARCH_TYPE && param_string == PARAM_DEFAULT_NEIGH_SEARCH_PARAMS)
     {
       ROS_INFO("rviz_cloud_annotation: parameter %s is at default value, using %s instead.",
-               PARAM_NAME_NEIGH_SEARCH_PARAMS,PARAM_NAME_NEIGH_SEARCH_DISTANCE);
-      m_nh.param<double>(PARAM_NAME_NEIGH_SEARCH_DISTANCE,param_double,PARAM_DEFAULT_NEIGH_SEARCH_DISTANCE);
+               PARAM_NAME_NEIGH_SEARCH_PARAMS, PARAM_NAME_NEIGH_SEARCH_DISTANCE);
+      m_nh.param<double>(PARAM_NAME_NEIGH_SEARCH_DISTANCE, param_double, PARAM_DEFAULT_NEIGH_SEARCH_DISTANCE);
       param_string = boost::lexical_cast<std::string>(param_double);
     }
 
     try
     {
-      conf.searcher = PointNeighborhoodSearch::CreateFromString(param_int,param_string);
+      conf.searcher = PointNeighborhoodSearch::CreateFromString(param_int, param_string);
     }
-    catch (const PointNeighborhoodSearch::ParserException & ex)
+    catch (const PointNeighborhoodSearch::ParserException &ex)
     {
-      ROS_ERROR("rviz_cloud_annotation: could not configure point neighborhood search from ROS param: %s",ex.message.c_str());
+      ROS_ERROR("rviz_cloud_annotation: could not configure point neighborhood search from ROS param: %s", ex.message.c_str());
       conf.searcher = PointNeighborhoodSearch::CreateFromString(PARAM_DEFAULT_NEIGH_SEARCH_TYPE,
-        boost::lexical_cast<std::string>(PARAM_DEFAULT_NEIGH_SEARCH_DISTANCE));
+                                                                boost::lexical_cast<std::string>(PARAM_DEFAULT_NEIGH_SEARCH_DISTANCE));
     }
 
-    m_nh.param<double>(PARAM_NAME_COLOR_IMPORTANCE,param_double,PARAM_DEFAULT_COLOR_IMPORTANCE);
+    m_nh.param<double>(PARAM_NAME_COLOR_IMPORTANCE, param_double, PARAM_DEFAULT_COLOR_IMPORTANCE);
     conf.color_importance = param_double;
 
-    m_nh.param<double>(PARAM_NAME_NORMAL_IMPORTANCE,param_double,PARAM_DEFAULT_NORMAL_IMPORTANCE);
+    m_nh.param<double>(PARAM_NAME_NORMAL_IMPORTANCE, param_double, PARAM_DEFAULT_NORMAL_IMPORTANCE);
     conf.normal_importance = param_double;
 
-    m_nh.param<double>(PARAM_NAME_POSITION_IMPORTANCE,param_double,PARAM_DEFAULT_POSITION_IMPORTANCE);
+    m_nh.param<double>(PARAM_NAME_POSITION_IMPORTANCE, param_double, PARAM_DEFAULT_POSITION_IMPORTANCE);
     conf.position_importance = param_double;
 
-    m_nh.param<double>(PARAM_NAME_MAX_DISTANCE,param_double,PARAM_DEFAULT_MAX_DISTANCE);
+    m_nh.param<double>(PARAM_NAME_MAX_DISTANCE, param_double, PARAM_DEFAULT_MAX_DISTANCE);
     conf.max_distance = param_double;
 
-    m_nh.param<int>(PARAM_NAME_WEIGHT_STEPS,param_int,PARAM_DEFAULT_WEIGHT_STEPS);
-    m_control_point_max_weight = std::max<uint32>(1,param_int);
+    m_nh.param<int>(PARAM_NAME_WEIGHT_STEPS, param_int, PARAM_DEFAULT_WEIGHT_STEPS);
+    m_control_point_max_weight = std::max<uint32>(1, param_int);
 
     ROS_INFO("rviz_cloud_annotation: building point neighborhood...");
-    m_point_neighborhood = PointNeighborhood::ConstPtr(new PointNeighborhood(m_cloud,conf));
+    m_point_neighborhood = PointNeighborhood::ConstPtr(new PointNeighborhood(m_cloud, conf));
     ROS_INFO("rviz_cloud_annotation: done.");
   }
 
   RVizCloudAnnotationPoints::Ptr default_annotation = RVizCloudAnnotationPoints::Ptr(new RVizCloudAnnotationPoints(
-    m_cloud->size(),m_control_point_max_weight,m_point_neighborhood));
+      m_cloud->size(), m_control_point_max_weight, m_point_neighborhood));
   m_annotation = default_annotation;
   m_undo_redo.SetAnnotation(default_annotation);
 
-  m_nh.param<std::string>(PARAM_NAME_FRAME_ID,m_frame_id,PARAM_DEFAULT_FRAME_ID);
+  m_nh.param<std::string>(PARAM_NAME_FRAME_ID, m_frame_id, PARAM_DEFAULT_FRAME_ID);
 
-  m_nh.param<double>(PARAM_NAME_POINT_SIZE,param_double,PARAM_DEFAULT_POINT_SIZE);
+  m_nh.param<double>(PARAM_NAME_POINT_SIZE, param_double, PARAM_DEFAULT_POINT_SIZE);
   m_point_size = param_double;
 
-  m_nh.param<double>(PARAM_NAME_LABEL_SIZE,param_double,PARAM_DEFAULT_LABEL_SIZE);
+  m_nh.param<double>(PARAM_NAME_LABEL_SIZE, param_double, PARAM_DEFAULT_LABEL_SIZE);
   m_label_size = param_double;
 
-  m_nh.param<double>(PARAM_NAME_CONTROL_LABEL_SIZE,param_double,PARAM_DEFAULT_CONTROL_LABEL_SIZE);
+  m_nh.param<double>(PARAM_NAME_CONTROL_LABEL_SIZE, param_double, PARAM_DEFAULT_CONTROL_LABEL_SIZE);
   m_control_label_size = param_double;
 
-  m_nh.param<bool>(PARAM_NAME_SHOW_POINTS_BACK_LABELS,m_show_points_back_labels,PARAM_DEFAULT_SHOW_POINTS_BACK_LABELS);
+  m_nh.param<bool>(PARAM_NAME_SHOW_POINTS_BACK_LABELS, m_show_points_back_labels, PARAM_DEFAULT_SHOW_POINTS_BACK_LABELS);
 
-  m_nh.param<std::string>(PARAM_NAME_CONTROL_POINT_VISUAL,param_string,PARAM_DEFAULT_CONTROL_POINT_VISUAL);
+  m_nh.param<std::string>(PARAM_NAME_CONTROL_POINT_VISUAL, param_string, PARAM_DEFAULT_CONTROL_POINT_VISUAL);
   if (param_string == PARAM_VALUE_CONTROL_POINT_VISUAL_LINE)
     m_control_points_visual = CONTROL_POINT_VISUAL_LINE;
   else if (param_string == PARAM_VALUE_CONTROL_POINT_VISUAL_SPHERE)
@@ -147,104 +147,104 @@ RVizCloudAnnotation::RVizCloudAnnotation(ros::NodeHandle & nh): m_nh(nh)
     m_control_points_visual = CONTROL_POINT_VISUAL_THREE_SPHERES;
   else
   {
-    ROS_ERROR("rviz_cloud_annotation: invalid value for parameter %s: %s",PARAM_NAME_CONTROL_POINT_VISUAL,param_string.c_str());
+    ROS_ERROR("rviz_cloud_annotation: invalid value for parameter %s: %s", PARAM_NAME_CONTROL_POINT_VISUAL, param_string.c_str());
     m_control_points_visual = CONTROL_POINT_VISUAL_SPHERE;
   }
 
-  m_nh.param<double>(PARAM_NAME_CP_WEIGHT_SCALE_FRACTION,param_double,PARAM_DEFAULT_CP_WEIGHT_SCALE_FRACTION);
-  m_cp_weight_scale_fraction = std::min<float>(1.0,std::max(0.0,param_double));
+  m_nh.param<double>(PARAM_NAME_CP_WEIGHT_SCALE_FRACTION, param_double, PARAM_DEFAULT_CP_WEIGHT_SCALE_FRACTION);
+  m_cp_weight_scale_fraction = std::min<float>(1.0, std::max(0.0, param_double));
 
-  m_nh.param<bool>(PARAM_NAME_ZERO_WEIGHT_CP_SHOW,m_show_zero_weight_control_points,PARAM_DEFAULT_ZERO_WEIGHT_CP_SHOW);
+  m_nh.param<bool>(PARAM_NAME_ZERO_WEIGHT_CP_SHOW, m_show_zero_weight_control_points, PARAM_DEFAULT_ZERO_WEIGHT_CP_SHOW);
 
-  m_nh.param<std::string>(PARAM_NAME_RECT_SELECTION_TOPIC,param_string,PARAM_DEFAULT_RECT_SELECTION_TOPIC);
-  m_rect_selection_sub = m_nh.subscribe(param_string,1,&RVizCloudAnnotation::onRectangleSelectionViewport,this);
+  m_nh.param<std::string>(PARAM_NAME_RECT_SELECTION_TOPIC, param_string, PARAM_DEFAULT_RECT_SELECTION_TOPIC);
+  m_rect_selection_sub = m_nh.subscribe(param_string, 1, &RVizCloudAnnotation::onRectangleSelectionViewport, this);
 
-  m_nh.param<std::string>(PARAM_NAME_SAVE_TOPIC,param_string,PARAM_DEFAULT_SAVE_TOPIC);
-  m_save_sub = m_nh.subscribe(param_string,1,&RVizCloudAnnotation::onSave,this);
+  m_nh.param<std::string>(PARAM_NAME_SAVE_TOPIC, param_string, PARAM_DEFAULT_SAVE_TOPIC);
+  m_save_sub = m_nh.subscribe(param_string, 1, &RVizCloudAnnotation::onSave, this);
 
-  m_nh.param<std::string>(PARAM_NAME_RESTORE_TOPIC,param_string,PARAM_DEFAULT_RESTORE_TOPIC);
-  m_restore_sub = m_nh.subscribe(param_string,1,&RVizCloudAnnotation::onRestore,this);
+  m_nh.param<std::string>(PARAM_NAME_RESTORE_TOPIC, param_string, PARAM_DEFAULT_RESTORE_TOPIC);
+  m_restore_sub = m_nh.subscribe(param_string, 1, &RVizCloudAnnotation::onRestore, this);
 
-  m_nh.param<std::string>(PARAM_NAME_CLEAR_TOPIC,param_string,PARAM_DEFAULT_CLEAR_TOPIC);
-  m_clear_sub = m_nh.subscribe(param_string,1,&RVizCloudAnnotation::onClear,this);
+  m_nh.param<std::string>(PARAM_NAME_CLEAR_TOPIC, param_string, PARAM_DEFAULT_CLEAR_TOPIC);
+  m_clear_sub = m_nh.subscribe(param_string, 1, &RVizCloudAnnotation::onClear, this);
 
-  m_nh.param<std::string>(PARAM_NAME_SET_EDIT_MODE_TOPIC,param_string,PARAM_DEFAULT_SET_EDIT_MODE_TOPIC);
-  m_set_edit_mode_sub = m_nh.subscribe(param_string,1,&RVizCloudAnnotation::onSetEditMode,this);
+  m_nh.param<std::string>(PARAM_NAME_SET_EDIT_MODE_TOPIC, param_string, PARAM_DEFAULT_SET_EDIT_MODE_TOPIC);
+  m_set_edit_mode_sub = m_nh.subscribe(param_string, 1, &RVizCloudAnnotation::onSetEditMode, this);
 
-  m_nh.param<std::string>(PARAM_NAME_TOGGLE_NONE_TOPIC,param_string,PARAM_DEFAULT_TOGGLE_NONE_TOPIC);
-  m_toggle_none_sub = m_nh.subscribe(param_string,1,&RVizCloudAnnotation::onToggleNoneMode,this);
+  m_nh.param<std::string>(PARAM_NAME_TOGGLE_NONE_TOPIC, param_string, PARAM_DEFAULT_TOGGLE_NONE_TOPIC);
+  m_toggle_none_sub = m_nh.subscribe(param_string, 1, &RVizCloudAnnotation::onToggleNoneMode, this);
 
-  m_nh.param<std::string>(PARAM_NAME_SET_CURRENT_LABEL_TOPIC,param_string,PARAM_DEFAULT_SET_CURRENT_LABEL_TOPIC);
-  m_set_current_label_sub = m_nh.subscribe(param_string,1,&RVizCloudAnnotation::onSetCurrentLabel,this);
+  m_nh.param<std::string>(PARAM_NAME_SET_CURRENT_LABEL_TOPIC, param_string, PARAM_DEFAULT_SET_CURRENT_LABEL_TOPIC);
+  m_set_current_label_sub = m_nh.subscribe(param_string, 1, &RVizCloudAnnotation::onSetCurrentLabel, this);
 
-  m_nh.param<std::string>(PARAM_NAME_SET_EDIT_MODE_TOPIC2,param_string,PARAM_DEFAULT_SET_EDIT_MODE_TOPIC2);
-  m_set_edit_mode_pub = m_nh.advertise<std_msgs::UInt32>(param_string,1);
+  m_nh.param<std::string>(PARAM_NAME_SET_EDIT_MODE_TOPIC2, param_string, PARAM_DEFAULT_SET_EDIT_MODE_TOPIC2);
+  m_set_edit_mode_pub = m_nh.advertise<std_msgs::UInt32>(param_string, 1);
 
-  m_nh.param<std::string>(PARAM_NAME_CURRENT_LABEL_TOPIC,param_string,PARAM_DEFAULT_CURRENT_LABEL_TOPIC);
-  m_set_current_label_pub = m_nh.advertise<std_msgs::UInt32>(param_string,1);
+  m_nh.param<std::string>(PARAM_NAME_CURRENT_LABEL_TOPIC, param_string, PARAM_DEFAULT_CURRENT_LABEL_TOPIC);
+  m_set_current_label_pub = m_nh.advertise<std_msgs::UInt32>(param_string, 1);
 
-  m_nh.param<std::string>(PARAM_NAME_POINT_COUNT_UPDATE_TOPIC,param_string,PARAM_DEFAULT_POINT_COUNT_UPDATE_TOPIC);
-  m_point_count_update_pub = m_nh.advertise<std_msgs::UInt64MultiArray>(param_string,1,true);
+  m_nh.param<std::string>(PARAM_NAME_POINT_COUNT_UPDATE_TOPIC, param_string, PARAM_DEFAULT_POINT_COUNT_UPDATE_TOPIC);
+  m_point_count_update_pub = m_nh.advertise<std_msgs::UInt64MultiArray>(param_string, 1, true);
 
-  m_nh.param<std::string>(PARAM_NAME_ANNOTATED_CLOUD,m_ann_cloud_filename_out,PARAM_DEFAULT_ANNOTATED_CLOUD);
-  m_nh.param<std::string>(PARAM_NAME_ANN_FILENAME_IN,m_annotation_filename_in,PARAM_DEFAULT_ANN_FILENAME_IN);
-  m_nh.param<std::string>(PARAM_NAME_ANN_FILENAME_OUT,m_annotation_filename_out,PARAM_DEFAULT_ANN_FILENAME_OUT);
-  m_nh.param<std::string>(PARAM_NAME_LABEL_NAMES_FILENAME,m_label_names_filename_out,PARAM_DEFAULT_LABEL_NAMES_FILENAME);
+  m_nh.param<std::string>(PARAM_NAME_ANNOTATED_CLOUD, m_ann_cloud_filename_out, PARAM_DEFAULT_ANNOTATED_CLOUD);
+  m_nh.param<std::string>(PARAM_NAME_ANN_FILENAME_IN, m_annotation_filename_in, PARAM_DEFAULT_ANN_FILENAME_IN);
+  m_nh.param<std::string>(PARAM_NAME_ANN_FILENAME_OUT, m_annotation_filename_out, PARAM_DEFAULT_ANN_FILENAME_OUT);
+  m_nh.param<std::string>(PARAM_NAME_LABEL_NAMES_FILENAME, m_label_names_filename_out, PARAM_DEFAULT_LABEL_NAMES_FILENAME);
 
-  m_nh.param<std::string>(PARAM_NAME_SET_NAME_TOPIC,param_string,PARAM_DEFAULT_SET_NAME_TOPIC);
-  m_set_name_sub = m_nh.subscribe(param_string,1,&RVizCloudAnnotation::onSetName,this);
+  m_nh.param<std::string>(PARAM_NAME_SET_NAME_TOPIC, param_string, PARAM_DEFAULT_SET_NAME_TOPIC);
+  m_set_name_sub = m_nh.subscribe(param_string, 1, &RVizCloudAnnotation::onSetName, this);
 
-  m_nh.param<std::string>(PARAM_NAME_SET_NAME_TOPIC2,param_string,PARAM_DEFAULT_SET_NAME_TOPIC2);
-  m_set_name_pub = m_nh.advertise<std_msgs::String>(param_string,1,true);
+  m_nh.param<std::string>(PARAM_NAME_SET_NAME_TOPIC2, param_string, PARAM_DEFAULT_SET_NAME_TOPIC2);
+  m_set_name_pub = m_nh.advertise<std_msgs::String>(param_string, 1, true);
 
-  m_nh.param<std::string>(PARAM_NAME_VIEW_CONTROL_POINTS_TOPIC,param_string,PARAM_DEFAULT_VIEW_CONTROL_POINTS_TOPIC);
-  m_view_control_points_sub = m_nh.subscribe(param_string,1,&RVizCloudAnnotation::onViewControlPoints,this);
+  m_nh.param<std::string>(PARAM_NAME_VIEW_CONTROL_POINTS_TOPIC, param_string, PARAM_DEFAULT_VIEW_CONTROL_POINTS_TOPIC);
+  m_view_control_points_sub = m_nh.subscribe(param_string, 1, &RVizCloudAnnotation::onViewControlPoints, this);
 
-  m_nh.param<std::string>(PARAM_NAME_VIEW_CLOUD_TOPIC,param_string,PARAM_DEFAULT_VIEW_CLOUD_TOPIC);
-  m_view_cloud_sub = m_nh.subscribe(param_string,1,&RVizCloudAnnotation::onViewCloud,this);
+  m_nh.param<std::string>(PARAM_NAME_VIEW_CLOUD_TOPIC, param_string, PARAM_DEFAULT_VIEW_CLOUD_TOPIC);
+  m_view_cloud_sub = m_nh.subscribe(param_string, 1, &RVizCloudAnnotation::onViewCloud, this);
 
-  m_nh.param<std::string>(PARAM_NAME_VIEW_LABEL_TOPIC,param_string,PARAM_DEFAULT_VIEW_LABEL_TOPIC);
-  m_view_labels_sub = m_nh.subscribe(param_string,1,&RVizCloudAnnotation::onViewLabels,this);
+  m_nh.param<std::string>(PARAM_NAME_VIEW_LABEL_TOPIC, param_string, PARAM_DEFAULT_VIEW_LABEL_TOPIC);
+  m_view_labels_sub = m_nh.subscribe(param_string, 1, &RVizCloudAnnotation::onViewLabels, this);
 
-  m_nh.param<std::string>(PARAM_NAME_UNDO_REDO_STATE_TOPIC,param_string,PARAM_DEFAULT_UNDO_REDO_STATE_TOPIC);
-  m_undo_redo_state_pub = m_nh.advertise<rviz_cloud_annotation::UndoRedoState>(param_string,1,true);
+  m_nh.param<std::string>(PARAM_NAME_UNDO_REDO_STATE_TOPIC, param_string, PARAM_DEFAULT_UNDO_REDO_STATE_TOPIC);
+  m_undo_redo_state_pub = m_nh.advertise<rviz_cloud_annotation::UndoRedoState>(param_string, 1, true);
 
-  m_nh.param<std::string>(PARAM_NAME_UNDO_TOPIC,param_string,PARAM_DEFAULT_UNDO_TOPIC);
-  m_undo_sub = m_nh.subscribe(param_string,1,&RVizCloudAnnotation::onUndo,this);
+  m_nh.param<std::string>(PARAM_NAME_UNDO_TOPIC, param_string, PARAM_DEFAULT_UNDO_TOPIC);
+  m_undo_sub = m_nh.subscribe(param_string, 1, &RVizCloudAnnotation::onUndo, this);
 
-  m_nh.param<std::string>(PARAM_NAME_REDO_TOPIC,param_string,PARAM_DEFAULT_REDO_TOPIC);
-  m_redo_sub = m_nh.subscribe(param_string,1,&RVizCloudAnnotation::onRedo,this);
+  m_nh.param<std::string>(PARAM_NAME_REDO_TOPIC, param_string, PARAM_DEFAULT_REDO_TOPIC);
+  m_redo_sub = m_nh.subscribe(param_string, 1, &RVizCloudAnnotation::onRedo, this);
 
-  m_nh.param<std::string>(PARAM_NAME_POINT_SIZE_CHANGE_TOPIC,param_string,PARAM_DEFAULT_POINT_SIZE_CHANGE_TOPIC);
-  m_point_size_change_sub = m_nh.subscribe(param_string,1,&RVizCloudAnnotation::onPointSizeChange,this);
+  m_nh.param<std::string>(PARAM_NAME_POINT_SIZE_CHANGE_TOPIC, param_string, PARAM_DEFAULT_POINT_SIZE_CHANGE_TOPIC);
+  m_point_size_change_sub = m_nh.subscribe(param_string, 1, &RVizCloudAnnotation::onPointSizeChange, this);
 
-  m_nh.param<float>(PARAM_NAME_POINT_SIZE_CHANGE_MULT,m_point_size_change_multiplier,PARAM_DEFAULT_POINT_SIZE_CHANGE_MULT);
+  m_nh.param<float>(PARAM_NAME_POINT_SIZE_CHANGE_MULT, m_point_size_change_multiplier, PARAM_DEFAULT_POINT_SIZE_CHANGE_MULT);
 
-  m_nh.param<std::string>(PARAM_NAME_CONTROL_POINT_WEIGHT_TOPIC,param_string,PARAM_DEFAULT_CONTROL_POINT_WEIGHT_TOPIC);
-  m_control_points_weight_sub = m_nh.subscribe(param_string,1,&RVizCloudAnnotation::onControlPointWeightChange,this);
+  m_nh.param<std::string>(PARAM_NAME_CONTROL_POINT_WEIGHT_TOPIC, param_string, PARAM_DEFAULT_CONTROL_POINT_WEIGHT_TOPIC);
+  m_control_points_weight_sub = m_nh.subscribe(param_string, 1, &RVizCloudAnnotation::onControlPointWeightChange, this);
 
-  m_nh.param<std::string>(PARAM_NAME_CONTROL_POINT_MAX_WEIGHT_TOPIC,param_string,PARAM_DEFAULT_CONTROL_POINT_MAX_WEIGHT_TOPIC);
-  m_control_point_weight_max_weight_pub = nh.advertise<std_msgs::UInt32>(param_string,1,true);
+  m_nh.param<std::string>(PARAM_NAME_CONTROL_POINT_MAX_WEIGHT_TOPIC, param_string, PARAM_DEFAULT_CONTROL_POINT_MAX_WEIGHT_TOPIC);
+  m_control_point_weight_max_weight_pub = nh.advertise<std_msgs::UInt32>(param_string, 1, true);
 
-  m_nh.param<std::string>(PARAM_NAME_GOTO_FIRST_UNUSED_TOPIC,param_string,PARAM_DEFAULT_GOTO_FIRST_UNUSED_TOPIC);
-  m_goto_first_unused_sub = nh.subscribe(param_string,1,&RVizCloudAnnotation::onGotoFirstUnused,this);
+  m_nh.param<std::string>(PARAM_NAME_GOTO_FIRST_UNUSED_TOPIC, param_string, PARAM_DEFAULT_GOTO_FIRST_UNUSED_TOPIC);
+  m_goto_first_unused_sub = nh.subscribe(param_string, 1, &RVizCloudAnnotation::onGotoFirstUnused, this);
 
-  m_nh.param<std::string>(PARAM_NAME_GOTO_LAST_UNUSED_TOPIC,param_string,PARAM_DEFAULT_GOTO_LAST_UNUSED_TOPIC);
-  m_goto_last_unused_sub = nh.subscribe(param_string,1,&RVizCloudAnnotation::onGotoLastUnused,this);
+  m_nh.param<std::string>(PARAM_NAME_GOTO_LAST_UNUSED_TOPIC, param_string, PARAM_DEFAULT_GOTO_LAST_UNUSED_TOPIC);
+  m_goto_last_unused_sub = nh.subscribe(param_string, 1, &RVizCloudAnnotation::onGotoLastUnused, this);
 
-  m_nh.param<std::string>(PARAM_NAME_GOTO_FIRST_TOPIC,param_string,PARAM_DEFAULT_GOTO_FIRST_TOPIC);
-  m_goto_first_sub = nh.subscribe(param_string,1,&RVizCloudAnnotation::onGotoFirst,this);
+  m_nh.param<std::string>(PARAM_NAME_GOTO_FIRST_TOPIC, param_string, PARAM_DEFAULT_GOTO_FIRST_TOPIC);
+  m_goto_first_sub = nh.subscribe(param_string, 1, &RVizCloudAnnotation::onGotoFirst, this);
 
-  m_nh.param<std::string>(PARAM_NAME_GOTO_NEXT_UNUSED_TOPIC,param_string,PARAM_DEFAULT_GOTO_NEXT_UNUSED_TOPIC);
-  m_goto_next_unused_sub = nh.subscribe(param_string,1,&RVizCloudAnnotation::onGotoNextUnused,this);
+  m_nh.param<std::string>(PARAM_NAME_GOTO_NEXT_UNUSED_TOPIC, param_string, PARAM_DEFAULT_GOTO_NEXT_UNUSED_TOPIC);
+  m_goto_next_unused_sub = nh.subscribe(param_string, 1, &RVizCloudAnnotation::onGotoNextUnused, this);
 
-  m_nh.param<double>(PARAM_NAME_AUTOSAVE_TIME,param_double,PARAM_DEFAULT_AUTOSAVE_TIME);
+  m_nh.param<double>(PARAM_NAME_AUTOSAVE_TIME, param_double, PARAM_DEFAULT_AUTOSAVE_TIME);
   if (param_double >= 1.0)
   {
-    m_autosave_timer = m_nh.createTimer(ros::Duration(param_double),&RVizCloudAnnotation::onAutosave,this,false,false);
-    ROS_INFO("rviz_cloud_annotation: autosave every %f seconds.",float(param_double));
+    m_autosave_timer = m_nh.createTimer(ros::Duration(param_double), &RVizCloudAnnotation::onAutosave, this, false, false);
+    ROS_INFO("rviz_cloud_annotation: autosave every %f seconds.", float(param_double));
   }
-  m_nh.param<bool>(PARAM_NAME_AUTOSAVE_TIMESTAMP,m_autosave_append_timestamp,PARAM_DEFAULT_AUTOSAVE_TIMESTAMP);
+  m_nh.param<bool>(PARAM_NAME_AUTOSAVE_TIMESTAMP, m_autosave_append_timestamp, PARAM_DEFAULT_AUTOSAVE_TIMESTAMP);
 
   m_current_label = 1;
   m_edit_mode = EDIT_MODE_NONE;
@@ -263,9 +263,9 @@ RVizCloudAnnotation::RVizCloudAnnotation(ros::NodeHandle & nh): m_nh(nh)
   m_autosave_timer.start();
 }
 
-RVizCloudAnnotation::InteractiveMarker RVizCloudAnnotation::ControlPointsToMarker(const PointXYZRGBNormalCloud & cloud,
-                                        const ControlPointDataVector & control_points,
-                                        const uint64 label,const bool interactive)
+RVizCloudAnnotation::InteractiveMarker RVizCloudAnnotation::ControlPointsToMarker(const PointXYZRGBNormalCloud &cloud,
+                                                                                  const ControlPointDataVector &control_points,
+                                                                                  const uint64 label, const bool interactive)
 {
   const uint64 control_size = control_points.size();
 
@@ -284,10 +284,9 @@ RVizCloudAnnotation::InteractiveMarker RVizCloudAnnotation::ControlPointsToMarke
                            m_control_points_visual == CONTROL_POINT_VISUAL_THREE_SPHERES;
 
   const float control_label_size = use_spheres ? m_control_label_size / 2.0 : m_control_label_size;
-  const uint64 cp_marker_count = m_control_points_visual == CONTROL_POINT_VISUAL_SPHERE ? 1 :
-                                 m_control_points_visual == CONTROL_POINT_VISUAL_THREE_SPHERES ? 3 :
-                                 m_control_points_visual == CONTROL_POINT_VISUAL_LINE ? 2 :
-                                 2;
+  const uint64 cp_marker_count = m_control_points_visual == CONTROL_POINT_VISUAL_SPHERE ? 1 : m_control_points_visual == CONTROL_POINT_VISUAL_THREE_SPHERES ? 3
+                                                                                          : m_control_points_visual == CONTROL_POINT_VISUAL_LINE            ? 2
+                                                                                                                                                            : 2;
 
   Marker cloud_marker;
   cloud_marker.type = use_spheres ? int(Marker::SPHERE_LIST) : int(Marker::LINE_LIST);
@@ -301,9 +300,9 @@ RVizCloudAnnotation::InteractiveMarker RVizCloudAnnotation::ControlPointsToMarke
 
   cloud_marker.points.resize(control_size * cp_marker_count);
   uint64 out_marker_count = 0;
-  for(uint64 i = 0; i < control_size; i++)
+  for (uint64 i = 0; i < control_size; i++)
   {
-    const PointXYZRGBNormal & pt = cloud[control_points[i].point_id];
+    const PointXYZRGBNormal &pt = cloud[control_points[i].point_id];
 
     const uint32 weight_step_id = control_points[i].weight_step_id;
     if (weight_step_id == 0 && !m_show_zero_weight_control_points)
@@ -337,9 +336,7 @@ RVizCloudAnnotation::InteractiveMarker RVizCloudAnnotation::ControlPointsToMarke
 
   visualization_msgs::InteractiveMarkerControl points_control;
   points_control.always_visible = true;
-  points_control.interaction_mode = interactive ?
-    int32(visualization_msgs::InteractiveMarkerControl::BUTTON) :
-    int32(visualization_msgs::InteractiveMarkerControl::NONE);
+  points_control.interaction_mode = interactive ? int32(visualization_msgs::InteractiveMarkerControl::BUTTON) : int32(visualization_msgs::InteractiveMarkerControl::NONE);
   if (m_view_control_points)
     points_control.markers.push_back(cloud_marker);
   marker.controls.push_back(points_control);
@@ -348,10 +345,10 @@ RVizCloudAnnotation::InteractiveMarker RVizCloudAnnotation::ControlPointsToMarke
 }
 
 RVizCloudAnnotation::InteractiveMarker RVizCloudAnnotation::LabelsToMarker(
-  const PointXYZRGBNormalCloud & cloud,
-  const Uint64Vector & labels,
-  const uint64 label,
-  const bool interactive)
+    const PointXYZRGBNormalCloud &cloud,
+    const Uint64Vector &labels,
+    const uint64 label,
+    const bool interactive)
 {
   const uint64 labels_size = labels.size();
 
@@ -384,9 +381,9 @@ RVizCloudAnnotation::InteractiveMarker RVizCloudAnnotation::LabelsToMarker(
   cloud_marker.color.a = 1.0;
 
   cloud_marker.points.resize(labels_size);
-  for(uint64 i = 0; i < labels_size; i++)
+  for (uint64 i = 0; i < labels_size; i++)
   {
-    const PointXYZRGBNormal & pt = cloud[labels[i]];
+    const PointXYZRGBNormal &pt = cloud[labels[i]];
 
     cloud_marker.points[i].x = pt.x + NANToZero(pt.normal_x) * normal_mult;
     cloud_marker.points[i].y = pt.y + NANToZero(pt.normal_y) * normal_mult;
@@ -397,9 +394,9 @@ RVizCloudAnnotation::InteractiveMarker RVizCloudAnnotation::LabelsToMarker(
   {
     cloud_marker.points.resize(labels_size * 2);
 
-    for(uint64 i = 0; i < labels_size; i++)
+    for (uint64 i = 0; i < labels_size; i++)
     {
-      const PointXYZRGBNormal & pt = cloud[labels[i]];
+      const PointXYZRGBNormal &pt = cloud[labels[i]];
 
       cloud_marker.points[labels_size + i].x = pt.x - NANToZero(pt.normal_x) * normal_mult; // point on the back
       cloud_marker.points[labels_size + i].y = pt.y - NANToZero(pt.normal_y) * normal_mult;
@@ -409,9 +406,7 @@ RVizCloudAnnotation::InteractiveMarker RVizCloudAnnotation::LabelsToMarker(
 
   visualization_msgs::InteractiveMarkerControl points_control;
   points_control.always_visible = true;
-  points_control.interaction_mode = interactive ?
-    int32(visualization_msgs::InteractiveMarkerControl::BUTTON) :
-    int32(visualization_msgs::InteractiveMarkerControl::NONE);
+  points_control.interaction_mode = interactive ? int32(visualization_msgs::InteractiveMarkerControl::BUTTON) : int32(visualization_msgs::InteractiveMarkerControl::NONE);
   if (m_view_labels && (!m_view_cloud || label != 0))
     points_control.markers.push_back(cloud_marker);
   marker.controls.push_back(points_control);
@@ -419,7 +414,7 @@ RVizCloudAnnotation::InteractiveMarker RVizCloudAnnotation::LabelsToMarker(
   return marker;
 }
 
-RVizCloudAnnotation::InteractiveMarker RVizCloudAnnotation::CloudToMarker(const PointXYZRGBNormalCloud & cloud,const bool interactive)
+RVizCloudAnnotation::InteractiveMarker RVizCloudAnnotation::CloudToMarker(const PointXYZRGBNormalCloud &cloud, const bool interactive)
 {
   const uint64 cloud_size = cloud.size();
 
@@ -444,9 +439,9 @@ RVizCloudAnnotation::InteractiveMarker RVizCloudAnnotation::CloudToMarker(const 
 
   cloud_marker.points.resize(cloud_size);
   cloud_marker.colors.resize(cloud_size);
-  for(uint64 i = 0; i < cloud_size; i++)
+  for (uint64 i = 0; i < cloud_size; i++)
   {
-    const PointXYZRGBNormal & pt = cloud[i];
+    const PointXYZRGBNormal &pt = cloud[i];
 
     cloud_marker.points[i].x = pt.x;
     cloud_marker.points[i].y = pt.y;
@@ -455,14 +450,13 @@ RVizCloudAnnotation::InteractiveMarker RVizCloudAnnotation::CloudToMarker(const 
     cloud_marker.colors[i].r = pt.r / 255.0;
     cloud_marker.colors[i].g = pt.g / 255.0;
     cloud_marker.colors[i].b = pt.b / 255.0;
-    cloud_marker.colors[i].a = 1.0;
+    cloud_marker.colors[i].a = pt.a;
+    // cloud_marker.colors[i].a = 1.0;
   }
 
   visualization_msgs::InteractiveMarkerControl points_control;
   points_control.always_visible = true;
-  points_control.interaction_mode = interactive ?
-    int32(visualization_msgs::InteractiveMarkerControl::BUTTON) :
-    int32(visualization_msgs::InteractiveMarkerControl::NONE);
+  points_control.interaction_mode = interactive ? int32(visualization_msgs::InteractiveMarkerControl::BUTTON) : int32(visualization_msgs::InteractiveMarkerControl::NONE);
   if (m_view_cloud)
     points_control.markers.push_back(cloud_marker);
   marker.controls.push_back(points_control);
@@ -470,25 +464,25 @@ RVizCloudAnnotation::InteractiveMarker RVizCloudAnnotation::CloudToMarker(const 
   return marker;
 }
 
-void RVizCloudAnnotation::Restore(const std::string & filename)
+void RVizCloudAnnotation::Restore(const std::string &filename)
 {
   std::ifstream ifile(filename.c_str());
   if (!ifile)
   {
-    ROS_ERROR("rviz_cloud_annotation: could not open file: %s",filename.c_str());
+    ROS_ERROR("rviz_cloud_annotation: could not open file: %s", filename.c_str());
     return;
   }
 
-  ROS_INFO("rviz_cloud_annotation: loading file: %s",filename.c_str());
+  ROS_INFO("rviz_cloud_annotation: loading file: %s", filename.c_str());
 
   RVizCloudAnnotationPoints::Ptr maybe_new_annotation;
   try
   {
-    maybe_new_annotation = RVizCloudAnnotationPoints::Deserialize(ifile,m_control_point_max_weight,m_point_neighborhood);
+    maybe_new_annotation = RVizCloudAnnotationPoints::Deserialize(ifile, m_control_point_max_weight, m_point_neighborhood);
   }
-  catch (const RVizCloudAnnotationPoints::IOE & e)
+  catch (const RVizCloudAnnotationPoints::IOE &e)
   {
-    ROS_ERROR("rviz_cloud_annotation: could not load file %s, reason: %s.",filename.c_str(),e.description.c_str());
+    ROS_ERROR("rviz_cloud_annotation: could not load file %s, reason: %s.", filename.c_str(), e.description.c_str());
     return;
   }
 
@@ -497,41 +491,41 @@ void RVizCloudAnnotation::Restore(const std::string & filename)
     const uint new_size = maybe_new_annotation->GetCloudSize();
     const uint old_size = m_annotation->GetCloudSize();
     ROS_ERROR("rviz_cloud_annotation: file was created for a cloud of size %u, but it is %u. Load operation aborted.",
-              new_size,old_size);
+              new_size, old_size);
     return;
   }
 
-  ClearControlPointsMarker(RangeUint64(1,m_annotation->GetNextLabel()),false);
+  ClearControlPointsMarker(RangeUint64(1, m_annotation->GetNextLabel()), false);
   m_annotation = maybe_new_annotation;
   m_undo_redo.SetAnnotation(maybe_new_annotation);
-  SendControlPointsMarker(RangeUint64(1,m_annotation->GetNextLabel()),true);
+  SendControlPointsMarker(RangeUint64(1, m_annotation->GetNextLabel()), true);
   SendName();
-  SendPointCounts(RangeUint64(1,m_annotation->GetNextLabel()));
+  SendPointCounts(RangeUint64(1, m_annotation->GetNextLabel()));
   SendUndoRedoState();
 
   ROS_INFO("rviz_cloud_annotation: file loaded.");
 }
 
-void RVizCloudAnnotation::LoadCloud(const std::string & filename,const std::string & normal_source,PointXYZRGBNormalCloud & cloud)
+void RVizCloudAnnotation::LoadCloud(const std::string &filename, const std::string &normal_source, PointXYZRGBNormalCloud &cloud)
 {
   cloud.clear();
 
   pcl::PCLPointCloud2 cloud2;
 
-  if (pcl::io::loadPCDFile(filename,cloud2))
+  if (pcl::io::loadPCDFile(filename, cloud2))
     throw std::string(std::string("could not load cloud: ") + filename);
 
   PointXYZRGBCloud xyz_rgb_cloud;
   PointNormalCloud normal_cloud;
 
-  pcl::fromPCLPointCloud2(cloud2,xyz_rgb_cloud);
+  pcl::fromPCLPointCloud2(cloud2, xyz_rgb_cloud);
 
   if (normal_source == PARAM_VALUE_NORMAL_SOURCE_CLOUD)
-    pcl::fromPCLPointCloud2(cloud2,normal_cloud);
-  else if (normal_source.substr(0,std::string(PARAM_VALUE_NORMAL_SOURCE_OTHER_CLOUD).size()) == PARAM_VALUE_NORMAL_SOURCE_OTHER_CLOUD)
+    pcl::fromPCLPointCloud2(cloud2, normal_cloud);
+  else if (normal_source.substr(0, std::string(PARAM_VALUE_NORMAL_SOURCE_OTHER_CLOUD).size()) == PARAM_VALUE_NORMAL_SOURCE_OTHER_CLOUD)
   {
     const std::string filename_n = normal_source.substr(std::string(PARAM_VALUE_NORMAL_SOURCE_OTHER_CLOUD).size());
-    if (pcl::io::loadPCDFile(filename_n,normal_cloud))
+    if (pcl::io::loadPCDFile(filename_n, normal_cloud))
       throw std::string(std::string("could not load normal source cloud: ") + filename_n);
   }
   else
@@ -540,7 +534,7 @@ void RVizCloudAnnotation::LoadCloud(const std::string & filename,const std::stri
   if (normal_cloud.size() != xyz_rgb_cloud.size())
     throw std::string("cloud and normal cloud have different sizes");
 
-  pcl::copyPointCloud(xyz_rgb_cloud,cloud);
+  pcl::copyPointCloud(xyz_rgb_cloud, cloud);
 
   for (uint64 i = 0; i < normal_cloud.size(); i++)
   {
@@ -563,19 +557,19 @@ void RVizCloudAnnotation::Save(const bool is_autosave)
   std::ofstream ofile(filename.c_str());
   if (!ofile)
   {
-    ROS_ERROR("rviz_cloud_annotation: could not create file: %s",filename.c_str());
+    ROS_ERROR("rviz_cloud_annotation: could not create file: %s", filename.c_str());
     return;
   }
 
-  ROS_INFO("rviz_cloud_annotation: saving file: %s",filename.c_str());
+  ROS_INFO("rviz_cloud_annotation: saving file: %s", filename.c_str());
 
   try
   {
     m_annotation->Serialize(ofile);
   }
-  catch (const RVizCloudAnnotationPoints::IOE & e)
+  catch (const RVizCloudAnnotationPoints::IOE &e)
   {
-    ROS_ERROR("rviz_cloud_annotation: could not save file %s, reason: %s.",filename.c_str(),e.description.c_str());
+    ROS_ERROR("rviz_cloud_annotation: could not save file %s, reason: %s.", filename.c_str(), e.description.c_str());
   }
   ROS_INFO("rviz_cloud_annotation: done.");
 
@@ -583,12 +577,12 @@ void RVizCloudAnnotation::Save(const bool is_autosave)
   if (is_autosave && m_autosave_append_timestamp)
     cloud_filename = AppendTimestampBeforeExtension(cloud_filename);
 
-  ROS_INFO("rviz_cloud_annotation: saving cloud: %s",cloud_filename.c_str());
+  ROS_INFO("rviz_cloud_annotation: saving cloud: %s", cloud_filename.c_str());
   {
     PointXYZRGBLCloud cloud_out;
-    pcl::copyPointCloud(*m_cloud,cloud_out);
+    pcl::copyPointCloud(*m_cloud, cloud_out);
     m_annotation->LabelCloudWithColor(cloud_out);
-    if (pcl::io::savePCDFileBinary(cloud_filename,cloud_out))
+    if (pcl::io::savePCDFileBinary(cloud_filename, cloud_out))
       ROS_ERROR("rviz_cloud_annotation: could not save labeled cloud.");
   }
   ROS_INFO("rviz_cloud_annotation: done.");
@@ -597,7 +591,7 @@ void RVizCloudAnnotation::Save(const bool is_autosave)
   if (is_autosave && m_autosave_append_timestamp)
     names_filename = AppendTimestampBeforeExtension(names_filename);
 
-  ROS_INFO("rviz_cloud_annotation: saving names: %s",names_filename.c_str());
+  ROS_INFO("rviz_cloud_annotation: saving names: %s", names_filename.c_str());
   {
     std::ofstream ofile(names_filename.c_str());
     for (uint64 i = 1; i < m_annotation->GetNextLabel(); i++)
@@ -613,37 +607,37 @@ void RVizCloudAnnotation::SetEditMode(const uint64 new_edit_mode)
   if (m_edit_mode == new_edit_mode)
     return; // nothing to do
 
-  const char * info_string;
+  const char *info_string;
 
   bool send_cloud = false;
   switch (new_edit_mode)
   {
-    case EDIT_MODE_NONE:
-      if (m_edit_mode != EDIT_MODE_NONE)
-        send_cloud = true;
-      info_string = "NONE";
-      break;
-    case EDIT_MODE_CONTROL_POINT:
-      if (m_edit_mode == EDIT_MODE_NONE)
-        send_cloud = true;
-      info_string = "CONTROL_POINT";
-      break;
-    case EDIT_MODE_ERASER:
-      if (m_edit_mode == EDIT_MODE_NONE)
-        send_cloud = true;
-      info_string = "ERASER";
-      break;
-    case EDIT_MODE_COLOR_PICKER:
-      if (m_edit_mode == EDIT_MODE_NONE)
-        send_cloud = true;
-      info_string = "COLOR_PICKER";
-      break;
-    default:
-      ROS_ERROR("rviz_cloud_annotation: unsupported edit mode %u received.",(unsigned int)(new_edit_mode));
-      return; // invalid
+  case EDIT_MODE_NONE:
+    if (m_edit_mode != EDIT_MODE_NONE)
+      send_cloud = true;
+    info_string = "NONE";
+    break;
+  case EDIT_MODE_CONTROL_POINT:
+    if (m_edit_mode == EDIT_MODE_NONE)
+      send_cloud = true;
+    info_string = "CONTROL_POINT";
+    break;
+  case EDIT_MODE_ERASER:
+    if (m_edit_mode == EDIT_MODE_NONE)
+      send_cloud = true;
+    info_string = "ERASER";
+    break;
+  case EDIT_MODE_COLOR_PICKER:
+    if (m_edit_mode == EDIT_MODE_NONE)
+      send_cloud = true;
+    info_string = "COLOR_PICKER";
+    break;
+  default:
+    ROS_ERROR("rviz_cloud_annotation: unsupported edit mode %u received.", (unsigned int)(new_edit_mode));
+    return; // invalid
   }
 
-  ROS_INFO("rviz_cloud_annotation: edit mode is now: %s",info_string);
+  ROS_INFO("rviz_cloud_annotation: edit mode is now: %s", info_string);
 
   if ((m_edit_mode == EDIT_MODE_NONE) || (new_edit_mode == EDIT_MODE_NONE))
     m_prev_edit_mode = m_edit_mode; // there must be at least one EDIT_MODE_NONE between current and prev
@@ -656,11 +650,11 @@ void RVizCloudAnnotation::SetEditMode(const uint64 new_edit_mode)
   if (send_cloud)
   {
     SendCloudMarker(false);
-    SendControlPointsMarker(RangeUint64(1,m_annotation->GetNextLabel()),true);
+    SendControlPointsMarker(RangeUint64(1, m_annotation->GetNextLabel()), true);
   }
 }
 
-std::string RVizCloudAnnotation::GetClickType(const std::string & marker_name,uint64 & label_out) const
+std::string RVizCloudAnnotation::GetClickType(const std::string &marker_name, uint64 &label_out) const
 {
   label_out = 0;
   if (marker_name == CLOUD_MARKER_NAME)
@@ -668,19 +662,19 @@ std::string RVizCloudAnnotation::GetClickType(const std::string & marker_name,ui
 
   std::string result;
   std::string num_str;
-  if (marker_name.substr(0,std::strlen(CONTROL_POINT_MARKER_PREFIX)) == CONTROL_POINT_MARKER_PREFIX)
+  if (marker_name.substr(0, std::strlen(CONTROL_POINT_MARKER_PREFIX)) == CONTROL_POINT_MARKER_PREFIX)
   {
     result = CONTROL_POINT_MARKER_PREFIX;
     num_str = marker_name.substr(std::strlen(CONTROL_POINT_MARKER_PREFIX));
   }
-  else if (marker_name.substr(0,std::strlen(LABEL_POINT_MARKER_PREFIX)) == LABEL_POINT_MARKER_PREFIX)
+  else if (marker_name.substr(0, std::strlen(LABEL_POINT_MARKER_PREFIX)) == LABEL_POINT_MARKER_PREFIX)
   {
     result = LABEL_POINT_MARKER_PREFIX;
     num_str = marker_name.substr(std::strlen(LABEL_POINT_MARKER_PREFIX));
   }
   else
   {
-    ROS_ERROR("rviz_cloud_annotation: click: unsupported marker name in message: %s",marker_name.c_str());
+    ROS_ERROR("rviz_cloud_annotation: click: unsupported marker name in message: %s", marker_name.c_str());
     return "";
   }
 
@@ -690,20 +684,20 @@ std::string RVizCloudAnnotation::GetClickType(const std::string & marker_name,ui
   }
   catch (const boost::bad_lexical_cast &)
   {
-    ROS_ERROR("rviz_cloud_annotation: click: could not convert %s to number.",num_str.c_str());
+    ROS_ERROR("rviz_cloud_annotation: click: could not convert %s to number.", num_str.c_str());
     return "";
   }
 
   return result;
 }
 
-RVizCloudAnnotation::uint64 RVizCloudAnnotation::GetClickedPointId(const InteractiveMarkerFeedback & click_feedback,bool & ok)
+RVizCloudAnnotation::uint64 RVizCloudAnnotation::GetClickedPointId(const InteractiveMarkerFeedback &click_feedback, bool &ok)
 {
   ok = false;
   const std::string marker_name = click_feedback.marker_name;
 
   uint64 label;
-  std::string click_type = GetClickType(marker_name,label);
+  std::string click_type = GetClickType(marker_name, label);
 
   if (click_type == CLOUD_MARKER_NAME || click_type == LABEL_POINT_MARKER_PREFIX)
   {
@@ -714,12 +708,12 @@ RVizCloudAnnotation::uint64 RVizCloudAnnotation::GetClickedPointId(const Interac
     click_pt.y = click_feedback.mouse_point.y;
     click_pt.z = click_feedback.mouse_point.z;
 
-    ROS_INFO("rviz_cloud_annotation: click at: %f %f %f",float(click_pt.x),float(click_pt.y),float(click_pt.z));
+    ROS_INFO("rviz_cloud_annotation: click at: %f %f %f", float(click_pt.x), float(click_pt.y), float(click_pt.z));
 
     std::vector<int> idxs(1);
     std::vector<float> dsts(1);
 
-    if (m_kdtree->nearestKSearch(click_pt,1,idxs,dsts) <= 0)
+    if (m_kdtree->nearestKSearch(click_pt, 1, idxs, dsts) <= 0)
     {
       ROS_WARN("rviz_cloud_annotation: point was clicked, but no nearest cloud point found.");
       return 0;
@@ -728,7 +722,7 @@ RVizCloudAnnotation::uint64 RVizCloudAnnotation::GetClickedPointId(const Interac
     const uint64 idx = idxs[0];
     const float dst = std::sqrt(dsts[0]);
 
-    ROS_INFO("rviz_cloud_annotation: clicked on point: %u (accuracy: %f)",(unsigned int)(idx),float(dst));
+    ROS_INFO("rviz_cloud_annotation: clicked on point: %u (accuracy: %f)", (unsigned int)(idx), float(dst));
 
     ok = true;
     return idx;
@@ -738,26 +732,26 @@ RVizCloudAnnotation::uint64 RVizCloudAnnotation::GetClickedPointId(const Interac
   {
     if (label == 0 || label >= m_annotation->GetNextLabel())
     {
-      ROS_ERROR("rviz_cloud_annotation: click: invalid control point label %u",(unsigned int)(label));
+      ROS_ERROR("rviz_cloud_annotation: click: invalid control point label %u", (unsigned int)(label));
       return 0;
     }
 
     const ControlPointDataVector control_points = m_annotation->GetControlPointList(label);
     if (control_points.empty())
     {
-      ROS_ERROR("rviz_cloud_annotation: click: control point label %u is empty!",(unsigned int)(label));
+      ROS_ERROR("rviz_cloud_annotation: click: control point label %u is empty!", (unsigned int)(label));
       return 0;
     }
 
-    const Eigen::Vector3f click_pt(click_feedback.mouse_point.x,click_feedback.mouse_point.y,click_feedback.mouse_point.z);
+    const Eigen::Vector3f click_pt(click_feedback.mouse_point.x, click_feedback.mouse_point.y, click_feedback.mouse_point.z);
 
     uint64 nearest_idx;
     float nearest_sqr_dist;
     for (uint64 i = 0; i < control_points.size(); i++)
     {
-      const PointXYZRGBNormal & pt = (*m_cloud)[control_points[i].point_id];
-      const Eigen::Vector3f ept(pt.x,pt.y,pt.z);
-      const Eigen::Vector3f en(pt.normal_x,pt.normal_y,pt.normal_z);
+      const PointXYZRGBNormal &pt = (*m_cloud)[control_points[i].point_id];
+      const Eigen::Vector3f ept(pt.x, pt.y, pt.z);
+      const Eigen::Vector3f en(pt.normal_x, pt.normal_y, pt.normal_z);
       const Eigen::Vector3f shift_pt = ept + en * m_control_label_size / 2.0;
       if (i == 0 || (shift_pt - click_pt).squaredNorm() < nearest_sqr_dist)
       {
@@ -769,7 +763,7 @@ RVizCloudAnnotation::uint64 RVizCloudAnnotation::GetClickedPointId(const Interac
     const uint64 idx = control_points[nearest_idx].point_id;
 
     ROS_INFO("rviz_cloud_annotation: clicked on control point: %u (accuracy: %f)",
-             (unsigned int)(idx),float(std::sqrt(nearest_sqr_dist)));
+             (unsigned int)(idx), float(std::sqrt(nearest_sqr_dist)));
 
     ok = true;
     return idx;
@@ -796,7 +790,7 @@ void RVizCloudAnnotation::SendName()
   m_set_name_pub.publish(msg);
 }
 
-void RVizCloudAnnotation::SendPointCounts(const Uint64Vector & labels)
+void RVizCloudAnnotation::SendPointCounts(const Uint64Vector &labels)
 {
   const uint64 labels_size = labels.size();
   std_msgs::UInt64MultiArray msg;
@@ -817,7 +811,7 @@ void RVizCloudAnnotation::onUndo(const std_msgs::Empty &)
 
   ROS_INFO("rviz_cloud_annotation: Undo.");
   const Uint64Vector changed = m_undo_redo.Undo();
-  SendControlPointsMarker(changed,true);
+  SendControlPointsMarker(changed, true);
   SendPointCounts(changed);
   SendName();
   SendUndoRedoState();
@@ -830,13 +824,13 @@ void RVizCloudAnnotation::onRedo(const std_msgs::Empty &)
 
   ROS_INFO("rviz_cloud_annotation: Redo.");
   const Uint64Vector changed = m_undo_redo.Redo();
-  SendControlPointsMarker(changed,true);
+  SendControlPointsMarker(changed, true);
   SendPointCounts(changed);
   SendName();
   SendUndoRedoState();
 }
 
-void RVizCloudAnnotation::onClear(const std_msgs::UInt32 & label_msg)
+void RVizCloudAnnotation::onClear(const std_msgs::UInt32 &label_msg)
 {
   const uint64 old_max_label = m_annotation->GetNextLabel();
 
@@ -847,7 +841,7 @@ void RVizCloudAnnotation::onClear(const std_msgs::UInt32 & label_msg)
   if (clear_label != 0)
   {
     const Uint64Vector changed = m_undo_redo.ClearLabel(clear_label);
-    SendControlPointsMarker(changed,true);
+    SendControlPointsMarker(changed, true);
     SendPointCounts(changed);
     SendName();
     SendUndoRedoState();
@@ -856,7 +850,7 @@ void RVizCloudAnnotation::onClear(const std_msgs::UInt32 & label_msg)
 
   const Uint64Vector changed = m_undo_redo.Clear();
   SendPointCounts(changed);
-  SendControlPointsMarker(changed,true);
+  SendControlPointsMarker(changed, true);
   SendName();
   SendUndoRedoState();
 }
@@ -868,53 +862,55 @@ void RVizCloudAnnotation::SendControlPointMaxWeight()
   m_control_point_weight_max_weight_pub.publish(msg);
 }
 
-void RVizCloudAnnotation::onControlPointWeightChange(const std_msgs::UInt32 & msg)
+void RVizCloudAnnotation::onControlPointWeightChange(const std_msgs::UInt32 &msg)
 {
   const uint32 new_weight = msg.data;
   if (new_weight > m_control_point_max_weight)
   {
-    ROS_ERROR("rviz_cloud_annotation: could not set weight to %u, maximum is %u",(unsigned int)(new_weight),
-      (unsigned int)(m_control_point_weight_step));
+    ROS_ERROR("rviz_cloud_annotation: could not set weight to %u, maximum is %u", (unsigned int)(new_weight),
+              (unsigned int)(m_control_point_weight_step));
     return;
   }
 
   m_control_point_weight_step = new_weight;
-  ROS_INFO("rviz_cloud_annotation: control point weight is now: %u",(unsigned int)(m_control_point_weight_step));
+  ROS_INFO("rviz_cloud_annotation: control point weight is now: %u", (unsigned int)(m_control_point_weight_step));
 }
 
-void RVizCloudAnnotation::onPointSizeChange(const std_msgs::Int32 & msg)
+void RVizCloudAnnotation::onPointSizeChange(const std_msgs::Int32 &msg)
 {
   switch (msg.data)
   {
-    case POINT_SIZE_CHANGE_BIGGER:
-      if (m_point_size_multiplier > 1e5)
-        return;
-      m_point_size_multiplier *= (1.0 + m_point_size_change_multiplier);
-      break;
-    case POINT_SIZE_CHANGE_SMALLER:
-      if (m_point_size_multiplier < 1e-5)
-        return;
-      m_point_size_multiplier /= (1.0 + m_point_size_change_multiplier);
-      break;
-    case POINT_SIZE_CHANGE_RESET:
-      if (m_point_size_multiplier == 1.0)
-        return;
-      m_point_size_multiplier = 1.0;
-      break;
-    default:
+  case POINT_SIZE_CHANGE_BIGGER:
+    if (m_point_size_multiplier > 1e5)
       return;
+    m_point_size_multiplier *= (1.0 + m_point_size_change_multiplier);
+    break;
+  case POINT_SIZE_CHANGE_SMALLER:
+    if (m_point_size_multiplier < 1e-5)
+      return;
+    m_point_size_multiplier /= (1.0 + m_point_size_change_multiplier);
+    break;
+  case POINT_SIZE_CHANGE_RESET:
+    if (m_point_size_multiplier == 1.0)
+      return;
+    m_point_size_multiplier = 1.0;
+    break;
+  default:
+    return;
   }
 
-  ROS_INFO("rviz_cloud_annotation: point size multiplier is now: %f",float(m_point_size_multiplier));
+  ROS_INFO("rviz_cloud_annotation: point size multiplier is now: %f", float(m_point_size_multiplier));
   SendCloudMarker(false);
-  SendControlPointsMarker(RangeUint64(1,m_annotation->GetNextLabel()),true);
+  SendControlPointsMarker(RangeUint64(1, m_annotation->GetNextLabel()), true);
 }
 
 void RVizCloudAnnotation::onGotoFirstUnused(const std_msgs::Empty &)
 {
   ROS_INFO("rviz_cloud_annotation: go to first unused label.");
   uint64 i;
-  for (i = 1; (m_annotation->GetLabelPointCount(i) != 0) && (i < UINT64_MAX); i++) {}
+  for (i = 1; (m_annotation->GetLabelPointCount(i) != 0) && (i < UINT64_MAX); i++)
+  {
+  }
   SetCurrentLabel(i);
 }
 
@@ -922,7 +918,9 @@ void RVizCloudAnnotation::onGotoLastUnused(const std_msgs::Empty &)
 {
   ROS_INFO("rviz_cloud_annotation: go to last unused label.");
   uint64 i = m_annotation->GetMaxLabel() + 1;
-  for (; (m_annotation->GetLabelPointCount(i) == 0) && (i > 0); i--) {}
+  for (; (m_annotation->GetLabelPointCount(i) == 0) && (i > 0); i--)
+  {
+  }
   SetCurrentLabel(i + 1);
 }
 
@@ -936,11 +934,13 @@ void RVizCloudAnnotation::onGotoNextUnused(const std_msgs::Empty &)
 {
   ROS_INFO("rviz_cloud_annotation: go to next unused label.");
   uint64 i = m_current_label + 1;
-  for (; (m_annotation->GetLabelPointCount(i) != 0) && (i < UINT64_MAX); i++) {}
+  for (; (m_annotation->GetLabelPointCount(i) != 0) && (i < UINT64_MAX); i++)
+  {
+  }
   SetCurrentLabel(i);
 }
 
-void RVizCloudAnnotation::ClearControlPointsMarker(const Uint64Vector & indices,const bool apply)
+void RVizCloudAnnotation::ClearControlPointsMarker(const Uint64Vector &indices, const bool apply)
 {
   const uint64 changed_size = indices.size();
   const ControlPointDataVector control_points_empty;
@@ -949,22 +949,22 @@ void RVizCloudAnnotation::ClearControlPointsMarker(const Uint64Vector & indices,
   {
     const uint64 label = indices[i];
     m_interactive_marker_server->insert(
-      ControlPointsToMarker(*m_cloud,control_points_empty,label,(m_edit_mode != EDIT_MODE_NONE)),
-      boost::bind(&RVizCloudAnnotation::onClickOnCloud,this,_1));
+        ControlPointsToMarker(*m_cloud, control_points_empty, label, (m_edit_mode != EDIT_MODE_NONE)),
+        boost::bind(&RVizCloudAnnotation::onClickOnCloud, this, _1));
     m_interactive_marker_server->insert(
-      LabelsToMarker(*m_cloud,labels_empty,label,(m_edit_mode != EDIT_MODE_NONE)),
-      boost::bind(&RVizCloudAnnotation::onClickOnCloud,this,_1));
+        LabelsToMarker(*m_cloud, labels_empty, label, (m_edit_mode != EDIT_MODE_NONE)),
+        boost::bind(&RVizCloudAnnotation::onClickOnCloud, this, _1));
   }
 
   m_interactive_marker_server->insert(
-    LabelsToMarker(*m_cloud,labels_empty,0,(m_edit_mode != EDIT_MODE_NONE)),
-    boost::bind(&RVizCloudAnnotation::onClickOnCloud,this,_1));
+      LabelsToMarker(*m_cloud, labels_empty, 0, (m_edit_mode != EDIT_MODE_NONE)),
+      boost::bind(&RVizCloudAnnotation::onClickOnCloud, this, _1));
 
   if (apply)
     m_interactive_marker_server->applyChanges();
 }
 
-void RVizCloudAnnotation::SendControlPointsMarker(const Uint64Vector & changed_labels,const bool apply)
+void RVizCloudAnnotation::SendControlPointsMarker(const Uint64Vector &changed_labels, const bool apply)
 {
   const uint64 changed_size = changed_labels.size();
   for (uint64 i = 0; i < changed_size; i++)
@@ -974,25 +974,25 @@ void RVizCloudAnnotation::SendControlPointsMarker(const Uint64Vector & changed_l
 
     const ControlPointDataVector control_points = isabove ? ControlPointDataVector() : m_annotation->GetControlPointList(label);
     m_interactive_marker_server->insert(
-      ControlPointsToMarker(*m_cloud,control_points,label,(m_edit_mode != EDIT_MODE_NONE)),
-      boost::bind(&RVizCloudAnnotation::onClickOnCloud,this,_1));
+        ControlPointsToMarker(*m_cloud, control_points, label, (m_edit_mode != EDIT_MODE_NONE)),
+        boost::bind(&RVizCloudAnnotation::onClickOnCloud, this, _1));
 
     const Uint64Vector label_points = isabove ? Uint64Vector() : m_annotation->GetLabelPointList(label);
     m_interactive_marker_server->insert(
-      LabelsToMarker(*m_cloud,label_points,label,(m_edit_mode != EDIT_MODE_NONE)),
-      boost::bind(&RVizCloudAnnotation::onClickOnCloud,this,_1));
+        LabelsToMarker(*m_cloud, label_points, label, (m_edit_mode != EDIT_MODE_NONE)),
+        boost::bind(&RVizCloudAnnotation::onClickOnCloud, this, _1));
   }
 
   const Uint64Vector label_points = m_annotation->GetLabelPointList(0);
   m_interactive_marker_server->insert(
-    LabelsToMarker(*m_cloud,label_points,0,(m_edit_mode != EDIT_MODE_NONE)),
-    boost::bind(&RVizCloudAnnotation::onClickOnCloud,this,_1));
+      LabelsToMarker(*m_cloud, label_points, 0, (m_edit_mode != EDIT_MODE_NONE)),
+      boost::bind(&RVizCloudAnnotation::onClickOnCloud, this, _1));
 
   if (apply)
     m_interactive_marker_server->applyChanges();
 }
 
-void RVizCloudAnnotation::onClickOnCloud(const InteractiveMarkerFeedbackConstPtr & feedback_ptr)
+void RVizCloudAnnotation::onClickOnCloud(const InteractiveMarkerFeedbackConstPtr &feedback_ptr)
 {
   if (m_edit_mode == EDIT_MODE_NONE)
   {
@@ -1000,44 +1000,44 @@ void RVizCloudAnnotation::onClickOnCloud(const InteractiveMarkerFeedbackConstPtr
     return;
   }
 
-  const InteractiveMarkerFeedback & feedback = *feedback_ptr;
+  const InteractiveMarkerFeedback &feedback = *feedback_ptr;
   uint8 type = feedback.event_type;
 
   if (type != InteractiveMarkerFeedback::BUTTON_CLICK)
     return; // not a click
 
-  ROS_INFO("rviz_cloud_annotation: click event (marker: %s).",feedback_ptr->marker_name.c_str());
+  ROS_INFO("rviz_cloud_annotation: click event (marker: %s).", feedback_ptr->marker_name.c_str());
 
   if (!feedback.mouse_point_valid)
     return; // invalid point
 
   bool ok;
-  const uint64 idx = GetClickedPointId(feedback,ok);
+  const uint64 idx = GetClickedPointId(feedback, ok);
 
   if (!ok)
     return;
 
   if (m_edit_mode == EDIT_MODE_CONTROL_POINT)
   {
-    ROS_INFO("rviz_cloud_annotation: setting label %u to point %u",(unsigned int)(m_current_label),(unsigned int)(idx));
-    const Uint64Vector changed_labels = m_undo_redo.SetControlPoint(idx,m_control_point_weight_step,m_current_label);
-    SendControlPointsMarker(changed_labels,true);
+    ROS_INFO("rviz_cloud_annotation: setting label %u to point %u", (unsigned int)(m_current_label), (unsigned int)(idx));
+    const Uint64Vector changed_labels = m_undo_redo.SetControlPoint(idx, m_control_point_weight_step, m_current_label);
+    SendControlPointsMarker(changed_labels, true);
     SendPointCounts(changed_labels);
     SendUndoRedoState();
   }
   else if (m_edit_mode == EDIT_MODE_ERASER)
   {
-    ROS_INFO("rviz_cloud_annotation: eraser: erasing label from point %u",(unsigned int)(idx));
-    const Uint64Vector changed_labels = m_undo_redo.SetControlPoint(idx,0,0);
-    SendControlPointsMarker(changed_labels,true);
+    ROS_INFO("rviz_cloud_annotation: eraser: erasing label from point %u", (unsigned int)(idx));
+    const Uint64Vector changed_labels = m_undo_redo.SetControlPoint(idx, 0, 0);
+    SendControlPointsMarker(changed_labels, true);
     SendPointCounts(changed_labels);
     SendUndoRedoState();
   }
   else if (m_edit_mode == EDIT_MODE_COLOR_PICKER)
   {
     const uint64 label = m_annotation->GetLabelForPoint(idx);
-    if (label ==  0)
-      ROS_WARN("rviz_cloud_annotation: color picker: point %u has no label yet.",uint(idx));
+    if (label == 0)
+      ROS_WARN("rviz_cloud_annotation: color picker: point %u has no label yet.", uint(idx));
     else
     {
       SetCurrentLabel(label);
@@ -1049,8 +1049,8 @@ void RVizCloudAnnotation::onClickOnCloud(const InteractiveMarkerFeedbackConstPtr
 void RVizCloudAnnotation::SendCloudMarker(const bool apply)
 {
   m_interactive_marker_server->insert(
-    CloudToMarker(*m_cloud,(m_edit_mode != EDIT_MODE_NONE)),
-    boost::bind(&RVizCloudAnnotation::onClickOnCloud,this,_1));
+      CloudToMarker(*m_cloud, (m_edit_mode != EDIT_MODE_NONE)),
+      boost::bind(&RVizCloudAnnotation::onClickOnCloud, this, _1));
 
   if (apply)
     m_interactive_marker_server->applyChanges();
@@ -1062,7 +1062,7 @@ void RVizCloudAnnotation::SetCurrentLabel(const uint64 label)
     return;
 
   m_current_label = label;
-  ROS_INFO("rviz_cloud_annotation: label is now: %u",(unsigned int)(m_current_label));
+  ROS_INFO("rviz_cloud_annotation: label is now: %u", (unsigned int)(m_current_label));
   SendName();
   SendUndoRedoState();
 
@@ -1071,7 +1071,7 @@ void RVizCloudAnnotation::SetCurrentLabel(const uint64 label)
   m_set_current_label_pub.publish(msg);
 }
 
-void RVizCloudAnnotation::onRectangleSelectionViewport(const rviz_cloud_annotation::RectangleSelectionViewport & msg)
+void RVizCloudAnnotation::onRectangleSelectionViewport(const rviz_cloud_annotation::RectangleSelectionViewport &msg)
 {
   ROS_INFO("rviz_cloud_annotation: rectangle selection event received.");
   const bool is_deep_selection = msg.is_deep_selection;
@@ -1079,7 +1079,7 @@ void RVizCloudAnnotation::onRectangleSelectionViewport(const rviz_cloud_annotati
   Eigen::Matrix4f projection_matrix;
   for (uint32 y = 0; y < 4; y++)
     for (uint32 x = 0; x < 4; x++)
-      projection_matrix(y,x) = msg.projection_matrix[x + y * 4];
+      projection_matrix(y, x) = msg.projection_matrix[x + y * 4];
 
   const uint32 start_x = msg.start_x;
   const uint32 start_y = msg.start_y;
@@ -1096,15 +1096,15 @@ void RVizCloudAnnotation::onRectangleSelectionViewport(const rviz_cloud_annotati
   Eigen::Affine3f camera_pose;
   {
     Eigen::Affine3d camera_pose_d;
-    tf::poseMsgToEigen(msg.camera_pose,camera_pose_d);
+    tf::poseMsgToEigen(msg.camera_pose, camera_pose_d);
     camera_pose = camera_pose_d.cast<float>();
   }
   const Eigen::Affine3f camera_pose_inv = camera_pose.inverse();
 
   Eigen::Affine3f scale_matrix = Eigen::Affine3f::Identity();
-  scale_matrix(0,0) = viewport_width / 2.0;
-  scale_matrix(1,1) = viewport_height / -2.0; // y axis must be inverted
-  scale_matrix(1,3) = viewport_height; // y is now negative, so move back to positive
+  scale_matrix(0, 0) = viewport_width / 2.0;
+  scale_matrix(1, 1) = viewport_height / -2.0; // y axis must be inverted
+  scale_matrix(1, 3) = viewport_height;        // y is now negative, so move back to positive
 
   Eigen::Affine3f translation_matrix = Eigen::Affine3f::Identity();
   translation_matrix.translation().x() = 1.0;
@@ -1113,7 +1113,8 @@ void RVizCloudAnnotation::onRectangleSelectionViewport(const rviz_cloud_annotati
   const Eigen::Matrix4f prod_matrix = (scale_matrix *
                                        translation_matrix *
                                        projection_matrix *
-                                       camera_pose_inv).matrix();
+                                       camera_pose_inv)
+                                          .matrix();
 
   Int32PolyTriangleVector tri_cond;
   if (!msg.polyline_x.empty())
@@ -1126,23 +1127,23 @@ void RVizCloudAnnotation::onRectangleSelectionViewport(const rviz_cloud_annotati
 
     for (uint64 i = 2; i < msg.polyline_x.size(); i++)
     {
-      Int32PolyTriangle tri(msg.polyline_x[0],msg.polyline_y[0],
-                        msg.polyline_x[i - 1],msg.polyline_y[i - 1],
-                        msg.polyline_x[i],msg.polyline_y[i]);
+      Int32PolyTriangle tri(msg.polyline_x[0], msg.polyline_y[0],
+                            msg.polyline_x[i - 1], msg.polyline_y[i - 1],
+                            msg.polyline_x[i], msg.polyline_y[i]);
       tri_cond.push_back(tri);
     }
   }
 
-  const Uint64Vector ids = RectangleSelectionToIds(prod_matrix,camera_pose_inv,*m_cloud,
-                                                   start_x,start_y,width,height,
+  const Uint64Vector ids = RectangleSelectionToIds(prod_matrix, camera_pose_inv, *m_cloud,
+                                                   start_x, start_y, width, height,
                                                    tri_cond,
-                                                   point_size,focal_length,
+                                                   point_size, focal_length,
                                                    is_deep_selection);
-  ROS_INFO("rviz_cloud_annotation: rectangle selection selected %d points.",int(ids.size()));
+  ROS_INFO("rviz_cloud_annotation: rectangle selection selected %d points.", int(ids.size()));
   VectorSelection(ids);
 }
 
-RVizCloudAnnotation::int32 RVizCloudAnnotation::Int32PolyTriangle::Contains(const int32 px,const int32 py) const
+RVizCloudAnnotation::int32 RVizCloudAnnotation::Int32PolyTriangle::Contains(const int32 px, const int32 py) const
 {
   bool clockwise = false;
 
@@ -1150,15 +1151,15 @@ RVizCloudAnnotation::int32 RVizCloudAnnotation::Int32PolyTriangle::Contains(cons
   {
     const uint64 i1 = (i + 1) % 3;
     const uint64 i2 = (i + 2) % 3;
-    const Eigen::Vector2i normal = Eigen::Vector2i(-y[i1] + y[i],x[i1] - x[i]);
+    const Eigen::Vector2i normal = Eigen::Vector2i(-y[i1] + y[i], x[i1] - x[i]);
     if (normal == Eigen::Vector2i::Zero())
       return 1; // degenerate
 
-    const int32 dot1 = Eigen::Vector2i(x[i2] - x[i],y[i2] - y[i]).dot(normal);
+    const int32 dot1 = Eigen::Vector2i(x[i2] - x[i], y[i2] - y[i]).dot(normal);
     if (i == 0)
       clockwise = (dot1 < 0);
 
-    const int32 dotp1 = Eigen::Vector2i(px - x[i],py - y[i]).dot(normal);
+    const int32 dotp1 = Eigen::Vector2i(px - x[i], py - y[i]).dot(normal);
     if (!dot1)
       return 1; // degenerate
     if (!dotp1)
@@ -1176,7 +1177,7 @@ RVizCloudAnnotation::int32 RVizCloudAnnotation::Int32PolyTriangle::Contains(cons
 
 RVizCloudAnnotation::Uint64Vector RVizCloudAnnotation::RectangleSelectionToIds(const Eigen::Matrix4f prod_matrix,
                                                                                const Eigen::Affine3f camera_pose_inv,
-                                                                               const PointXYZRGBNormalCloud & cloud,
+                                                                               const PointXYZRGBNormalCloud &cloud,
                                                                                const uint32 start_x,
                                                                                const uint32 start_y,
                                                                                const uint32 width,
@@ -1186,10 +1187,10 @@ RVizCloudAnnotation::Uint64Vector RVizCloudAnnotation::RectangleSelectionToIds(c
                                                                                const float focal_length,
                                                                                const bool is_deep_selection)
 {
-  Uint64Vector virtual_id_image(width * height,0);
-  FloatVector virtual_depth_image(width * height,0.0);
+  Uint64Vector virtual_id_image(width * height, 0);
+  FloatVector virtual_depth_image(width * height, 0.0);
 
-  BoolVector virtual_image_mask(width * height,tri_cond.empty()); // if empty, all is true
+  BoolVector virtual_image_mask(width * height, tri_cond.empty()); // if empty, all is true
   if (!tri_cond.empty())
   {
     for (uint32 y = 0; y < height; y++)
@@ -1198,8 +1199,8 @@ RVizCloudAnnotation::Uint64Vector RVizCloudAnnotation::RectangleSelectionToIds(c
         uint32 found = 0;
         for (uint64 i = 0; i < tri_cond.size(); i++)
         {
-          const Int32PolyTriangle & tri = tri_cond[i];
-          const int32 contains = tri.Contains(x + start_x,y + start_y);
+          const Int32PolyTriangle &tri = tri_cond[i];
+          const int32 contains = tri.Contains(x + start_x, y + start_y);
           if (contains <= 0)
             found += 1; // inside
         }
@@ -1209,16 +1210,16 @@ RVizCloudAnnotation::Uint64Vector RVizCloudAnnotation::RectangleSelectionToIds(c
   }
 
   const uint64 cloud_size = cloud.size();
-  BoolVector selected_points(cloud_size,false);
+  BoolVector selected_points(cloud_size, false);
   for (uint64 i = 0; i < cloud_size; i++)
   {
-    const PointXYZRGBNormal & ppt = cloud[i];
-    const Eigen::Vector3f ept(ppt.x,ppt.y,ppt.z);
+    const PointXYZRGBNormal &ppt = cloud[i];
+    const Eigen::Vector3f ept(ppt.x, ppt.y, ppt.z);
     const Eigen::Vector4f thpt = prod_matrix * ept.homogeneous();
     if (thpt.w() < 1e-5)
       continue;
     const Eigen::Vector3f tpt = thpt.head<3>() / thpt.w();
-    const Eigen::Vector2i itpt = tpt.head<2>().cast<int>() - Eigen::Vector2i(start_x,start_y);
+    const Eigen::Vector2i itpt = tpt.head<2>().cast<int>() - Eigen::Vector2i(start_x, start_y);
     const float depth = -(camera_pose_inv * ept).z();
     if (depth < 0.0)
       continue; // behind the observer
@@ -1235,7 +1236,7 @@ RVizCloudAnnotation::Uint64Vector RVizCloudAnnotation::RectangleSelectionToIds(c
 
     // if not deep, then we must compute point size for occlusions
     const float size_px = (point_size / 4.0) * focal_length / depth;
-    const int32 window_px = std::max<int32>(0,size_px);
+    const int32 window_px = std::max<int32>(0, size_px);
     if (itpt.x() < -window_px || itpt.y() < -window_px ||
         itpt.x() >= int(width) + window_px || itpt.y() >= int(height) + window_px)
       continue;
@@ -1259,7 +1260,7 @@ RVizCloudAnnotation::Uint64Vector RVizCloudAnnotation::RectangleSelectionToIds(c
     for (int32 dy = -window_px; dy <= window_px; dy++)
       for (int32 dx = -window_px; dx <= window_px; dx++)
       {
-        const Eigen::Vector2i ditpt = itpt + Eigen::Vector2i(dx,dy);
+        const Eigen::Vector2i ditpt = itpt + Eigen::Vector2i(dx, dy);
         if (ditpt.x() < 0 || ditpt.y() < 0 || ditpt.x() >= int(width) || ditpt.y() >= int(height))
           continue;
         const uint64 di = ditpt.x() + ditpt.y() * width;
@@ -1288,35 +1289,35 @@ RVizCloudAnnotation::Uint64Vector RVizCloudAnnotation::RectangleSelectionToIds(c
   return ids;
 }
 
-void RVizCloudAnnotation::VectorSelection(const Uint64Vector & ids)
+void RVizCloudAnnotation::VectorSelection(const Uint64Vector &ids)
 {
   if (m_edit_mode == EDIT_MODE_CONTROL_POINT)
   {
-    const Uint64Vector changed_labels = m_undo_redo.SetControlPointVector(ids,0,m_current_label);
-    SendControlPointsMarker(changed_labels,true);
+    const Uint64Vector changed_labels = m_undo_redo.SetControlPointVector(ids, 0, m_current_label);
+    SendControlPointsMarker(changed_labels, true);
     SendPointCounts(changed_labels);
     SendUndoRedoState();
-    ROS_INFO("rviz_cloud_annotation: selection set %d points.",int(ids.size()));
+    ROS_INFO("rviz_cloud_annotation: selection set %d points.", int(ids.size()));
   }
   else if (m_edit_mode == EDIT_MODE_ERASER)
   {
-    const Uint64Vector changed_labels = m_undo_redo.SetControlPointVector(ids,0,0);
-    SendControlPointsMarker(changed_labels,true);
+    const Uint64Vector changed_labels = m_undo_redo.SetControlPointVector(ids, 0, 0);
+    SendControlPointsMarker(changed_labels, true);
     SendPointCounts(changed_labels);
     SendUndoRedoState();
-    ROS_INFO("rviz_cloud_annotation: selection cleared %d points.",int(ids.size()));
+    ROS_INFO("rviz_cloud_annotation: selection cleared %d points.", int(ids.size()));
   }
   else
   {
-    ROS_WARN("rviz_cloud_annotation: invalid action %d for selection.",int(m_edit_mode));
+    ROS_WARN("rviz_cloud_annotation: invalid action %d for selection.", int(m_edit_mode));
   }
 }
 
-std::string RVizCloudAnnotation::AppendTimestampBeforeExtension(const std::string & filename)
+std::string RVizCloudAnnotation::AppendTimestampBeforeExtension(const std::string &filename)
 {
   std::string datetime = boost::posix_time::to_simple_string(boost::posix_time::second_clock::local_time());
-  std::replace(datetime.begin(),datetime.end(),' ','_');
-  std::replace(datetime.begin(),datetime.end(),':','-');
+  std::replace(datetime.begin(), datetime.end(), ' ', '_');
+  std::replace(datetime.begin(), datetime.end(), ':', '-');
 
   const std::size_t last_dot = filename.rfind('.');
   const std::size_t last_slash = filename.rfind("/");
@@ -1325,5 +1326,5 @@ std::string RVizCloudAnnotation::AppendTimestampBeforeExtension(const std::strin
   if (last_slash != std::string::npos && last_slash > last_dot)
     return filename + datetime; // the dot is in a directory
 
-  return filename.substr(0,last_dot) + datetime + filename.substr(last_dot);
+  return filename.substr(0, last_dot) + datetime + filename.substr(last_dot);
 }
