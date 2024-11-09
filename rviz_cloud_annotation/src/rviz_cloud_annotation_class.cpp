@@ -450,8 +450,8 @@ RVizCloudAnnotation::InteractiveMarker RVizCloudAnnotation::CloudToMarker(const 
     cloud_marker.colors[i].r = pt.r / 255.0;
     cloud_marker.colors[i].g = pt.g / 255.0;
     cloud_marker.colors[i].b = pt.b / 255.0;
-    cloud_marker.colors[i].a = pt.a;
-    // cloud_marker.colors[i].a = 1.0;
+    cloud_marker.colors[i].a = 1.0; //
+    //  cloud_marker.colors[i].a = 1.0;
   }
 
   visualization_msgs::InteractiveMarkerControl points_control;

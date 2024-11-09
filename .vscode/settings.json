@@ -4,7 +4,8 @@
         "*.bbl": "bibtex",
         "*.cpp": "cpp",
         "*.h": "cpp",
-        "cmath": "cpp"
+        "cmath": "cpp",
+        "ostream": "cpp"
     },
     "C_Cpp.default.intelliSenseMode": "linux-gcc-x64",
     "C_Cpp.default.cStandard": "c17",
@@ -14,6 +15,7 @@
         "/opt/ros/noetic/include/**",
         "/home/december/CloudAnnotation_ws/src/rviz_cloud_annotation/rviz_cloud_annotation/src/**",
         "/home/december/CloudAnnotation_ws/src/rviz_cloud_annotation/rviz_3d_view_controller/src/**",
+        "/home/december/CloudAnnotation_ws/src/rviz_cloud_annotation/rviz_2dproject_view_controller/src/**",
         "/usr/include/**"
     ],
     "editor.formatOnSave": true,

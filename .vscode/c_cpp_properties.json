@@ -9,6 +9,7 @@
                 "/home/december/CloudAnnotation_ws/devel/include/**",
                 "/home/december/CloudAnnotation_ws/src/rviz_cloud_annotation/rviz_cloud_annotation/src/**",
                 "/home/december/CloudAnnotation_ws/src/rviz_cloud_annotation/rviz_3d_view_controller/src/**",
+                "/home/december/CloudAnnotation_ws/src/rviz_cloud_annotation/rviz_2dproject_view_controller/src/**",
                 "/opt/ros/noetic/include/**",
                 "/usr/include/**"
             ],

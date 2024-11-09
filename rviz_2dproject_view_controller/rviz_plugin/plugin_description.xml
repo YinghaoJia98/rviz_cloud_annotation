@@ -1,0 +1,7 @@
+<library path="librviz_2dproject_view_controller">
+  <class name="rviz_2dproject_view_controller/Orbit2DProject" type="rviz_2d_project_view_controller_ns::ProjectTo2DViewController" base_class_type="rviz::ViewController">
+    <description>
+      View controller with projecting 3d into 2d.
+    </description>
+  </class>
+</library>
