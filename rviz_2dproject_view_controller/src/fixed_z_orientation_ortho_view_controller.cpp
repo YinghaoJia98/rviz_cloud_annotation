@@ -12,11 +12,11 @@
 #include <rviz/properties/float_property.h>
 #include <rviz/viewport_mouse_event.h>
 
-#include "fixed_y_orientation_ortho_view_controller.h"
+#include "fixed_z_orientation_ortho_view_controller.h"
 
-namespace FixedYOrientationOrthoViewControllerNs
+namespace FixedZOrientationOrthoViewControllerNs
 {
-  FixedYOrientationOrthoViewController::FixedYOrientationOrthoViewController() : dragging_(false)
+  FixedZOrientationOrthoViewController::FixedZOrientationOrthoViewController() : dragging_(false)
   {
     scale_property_ =
         new rviz::FloatProperty("Scale", 10, "How much to scale up the size of things in the scene.", this);
@@ -25,16 +25,16 @@ namespace FixedYOrientationOrthoViewControllerNs
     y_property_ = new rviz::FloatProperty("Y", 0, "Y component of camera position.", this);
     z_property_ = new rviz::FloatProperty("Z", 0, "Z component of camera position.", this);
 
-    InvertDirection_ = new rviz::BoolProperty("Invert Y Axis", false, "Invert camera's Y axis for Y-down environments/models.",
-                                              this, &FixedYOrientationOrthoViewController::InvertYAxis);
+    InvertDirection_ = new rviz::BoolProperty("Invert Z Axis", false, "Invert camera's Z axis for Y-down environments/models.",
+                                              this, &FixedZOrientationOrthoViewController::InvertZAxis);
     InvertDirectionInStdBool_ = false;
   }
 
-  FixedYOrientationOrthoViewController::~FixedYOrientationOrthoViewController()
+  FixedZOrientationOrthoViewController::~FixedZOrientationOrthoViewController()
   {
   }
 
-  void FixedYOrientationOrthoViewController::onInitialize()
+  void FixedZOrientationOrthoViewController::onInitialize()
   {
     rviz::FramePositionTrackingViewController::onInitialize();
 
@@ -43,7 +43,7 @@ namespace FixedYOrientationOrthoViewControllerNs
     invert_z_->hide();
   }
 
-  void FixedYOrientationOrthoViewController::reset()
+  void FixedZOrientationOrthoViewController::reset()
   {
     scale_property_->setFloat(10);
     angle_property_->setFloat(0);
@@ -52,22 +52,22 @@ namespace FixedYOrientationOrthoViewControllerNs
     z_property_->setFloat(0);
   }
 
-  void FixedYOrientationOrthoViewController::handleMouseEvent(rviz::ViewportMouseEvent &event)
+  void FixedZOrientationOrthoViewController::handleMouseEvent(rviz::ViewportMouseEvent &event)
   {
     if (event.shift())
     {
-      setStatus("<b>Left-Click:</b> Move X/Z.");
+      setStatus("<b>Left-Click:</b> Move X/Y.");
     }
     else
     {
-      setStatus("<b>Left-Click:</b> Rotate.  <b>Middle-Click:</b> Move X/Z.  <b>Right-Click:</b>: Zoom.  "
+      setStatus("<b>Left-Click:</b> Rotate.  <b>Middle-Click:</b> Move X/Y.  <b>Right-Click:</b>: Zoom.  "
                 "<b>Shift</b>: More options.");
     }
 
     bool moved = false;
 
     int32_t diff_x = 0;
-    int32_t diff_z = 0;
+    int32_t diff_y = 0;
 
     if (event.type == QEvent::MouseButtonPress)
     {
@@ -80,7 +80,7 @@ namespace FixedYOrientationOrthoViewControllerNs
     else if (dragging_ && event.type == QEvent::MouseMove)
     {
       diff_x = event.x - event.last_x;
-      diff_z = event.y - event.last_y;
+      diff_y = event.y - event.last_y;
       moved = true;
     }
 
@@ -94,12 +94,12 @@ namespace FixedYOrientationOrthoViewControllerNs
     {
       setCursor(MoveXY);
       float scale = scale_property_->getFloat();
-      move(-diff_x / scale, -diff_z / scale);
+      move(-diff_x / scale, diff_y / scale);
     }
     else if (event.right())
     {
       setCursor(Zoom);
-      scale_property_->multiply(1.0 - diff_z * 0.01);
+      scale_property_->multiply(1.0 - diff_y * 0.01);
     }
     else
     {
@@ -121,28 +121,28 @@ namespace FixedYOrientationOrthoViewControllerNs
     }
   }
 
-  void FixedYOrientationOrthoViewController::orientCamera()
+  void FixedZOrientationOrthoViewController::orientCamera()
   {
 
     camera_->setOrientation(
-        Ogre::Quaternion(Ogre::Radian(angle_property_->getFloat()), Ogre::Vector3::UNIT_Y));
+        Ogre::Quaternion(Ogre::Radian(angle_property_->getFloat()), Ogre::Vector3::UNIT_Z));
     if (!InvertDirectionInStdBool_)
     {
-      camera_->setDirection(Ogre::Vector3::NEGATIVE_UNIT_Y);
+      camera_->setDirection(Ogre::Vector3::NEGATIVE_UNIT_Z);
     }
     else
     {
-      camera_->setDirection(Ogre::Vector3::UNIT_Y);
+      camera_->setDirection(Ogre::Vector3::UNIT_Z);
     }
     // camera_->setDirection(Ogre::Vector3::NEGATIVE_UNIT_Y);
   }
 
-  void FixedYOrientationOrthoViewController::mimic(rviz::ViewController *source_view)
+  void FixedZOrientationOrthoViewController::mimic(rviz::ViewController *source_view)
   {
     rviz::FramePositionTrackingViewController::mimic(source_view);
 
-    if (FixedYOrientationOrthoViewController *source_ortho =
-            qobject_cast<FixedYOrientationOrthoViewController *>(source_view))
+    if (FixedZOrientationOrthoViewController *source_ortho =
+            qobject_cast<FixedZOrientationOrthoViewController *>(source_view))
     {
       scale_property_->setFloat(source_ortho->scale_property_->getFloat());
       angle_property_->setFloat(source_ortho->angle_property_->getFloat());
@@ -157,26 +157,26 @@ namespace FixedYOrientationOrthoViewControllerNs
     }
   }
 
-  void FixedYOrientationOrthoViewController::update(float dt, float ros_dt)
+  void FixedZOrientationOrthoViewController::update(float dt, float ros_dt)
   {
     rviz::FramePositionTrackingViewController::update(dt, ros_dt);
     updateCamera();
   }
 
-  void FixedYOrientationOrthoViewController::lookAt(const Ogre::Vector3 &point)
+  void FixedZOrientationOrthoViewController::lookAt(const Ogre::Vector3 &point)
   {
     setPosition(point - target_scene_node_->getPosition());
   }
 
-  void FixedYOrientationOrthoViewController::onTargetFrameChanged(
+  void FixedZOrientationOrthoViewController::onTargetFrameChanged(
       const Ogre::Vector3 &old_reference_position,
       const Ogre::Quaternion & /*old_reference_orientation*/)
   {
     move(old_reference_position.x - reference_position_.x,
-         old_reference_position.z - reference_position_.z);
+         old_reference_position.y - reference_position_.y);
   }
 
-  void FixedYOrientationOrthoViewController::updateCamera()
+  void FixedZOrientationOrthoViewController::updateCamera()
   {
     orientCamera();
 
@@ -201,21 +201,21 @@ namespace FixedYOrientationOrthoViewControllerNs
     camera_->setPosition(x_property_->getFloat(), y_property_->getFloat(), z_property_->getFloat());
   }
 
-  void FixedYOrientationOrthoViewController::setPosition(const Ogre::Vector3 &pos_rel_target)
+  void FixedZOrientationOrthoViewController::setPosition(const Ogre::Vector3 &pos_rel_target)
   {
     x_property_->setFloat(pos_rel_target.x);
     y_property_->setFloat(pos_rel_target.y);
     z_property_->setFloat(pos_rel_target.z);
   }
 
-  void FixedYOrientationOrthoViewController::move(float dx, float dz)
+  void FixedZOrientationOrthoViewController::move(float dx, float dy)
   {
     float angle = angle_property_->getFloat();
-    x_property_->add(dx * std::cos(angle) - dz * std::sin(angle));
-    z_property_->add(dx * std::sin(angle) + dz * std::cos(angle));
+    x_property_->add(dx * std::cos(angle) - dy * std::sin(angle));
+    y_property_->add(dx * std::sin(angle) + dy * std::cos(angle));
   }
 
-  void FixedYOrientationOrthoViewController::InvertYAxis()
+  void FixedZOrientationOrthoViewController::InvertZAxis()
   {
     if (InvertDirection_->getBool())
     {
@@ -227,9 +227,9 @@ namespace FixedYOrientationOrthoViewControllerNs
     }
   }
 
-} // end namespace FixedYOrientationOrthoViewControllerNs
+} // end namespace FixedZOrientationOrthoViewControllerNs
 
 #include <cmath>
 
 #include <pluginlib/class_list_macros.hpp>
-PLUGINLIB_EXPORT_CLASS(FixedYOrientationOrthoViewControllerNs::FixedYOrientationOrthoViewController, rviz::ViewController)
+PLUGINLIB_EXPORT_CLASS(FixedZOrientationOrthoViewControllerNs::FixedZOrientationOrthoViewController, rviz::ViewController)

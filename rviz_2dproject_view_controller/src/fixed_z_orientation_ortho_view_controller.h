@@ -1,5 +1,5 @@
-#ifndef RVIZ_FIXED_Y_ORIENTATION_ORTHO_VIEW_CONTROLLER_H
-#define RVIZ_FIXED_Y_ORIENTATION_ORTHO_VIEW_CONTROLLER_H
+#ifndef RVIZ_FIXED_Z_ORIENTATION_ORTHO_VIEW_CONTROLLER_H
+#define RVIZ_FIXED_Z_ORIENTATION_ORTHO_VIEW_CONTROLLER_H
 
 #include <rviz/frame_position_tracking_view_controller.h>
 
@@ -7,15 +7,15 @@
 
 #include "fixed_xyz_orientation_ortho_view_controller_base.h"
 
-namespace FixedYOrientationOrthoViewControllerNs
+namespace FixedZOrientationOrthoViewControllerNs
 {
 
-  class FixedYOrientationOrthoViewController : public rviz::FramePositionTrackingViewController
+  class FixedZOrientationOrthoViewController : public rviz::FramePositionTrackingViewController
   {
     Q_OBJECT
   public:
-    FixedYOrientationOrthoViewController();
-    ~FixedYOrientationOrthoViewController() override;
+    FixedZOrientationOrthoViewController();
+    ~FixedZOrientationOrthoViewController() override;
 
     void onInitialize() override;
 
@@ -51,9 +51,9 @@ namespace FixedYOrientationOrthoViewControllerNs
     bool InvertDirectionInStdBool_;
 
   private Q_SLOTS:
-    void InvertYAxis();
+    void InvertZAxis();
   };
 
-} // end namespace FixedYOrientationOrthoViewControllerNs
+} // end namespace FixedZOrientationOrthoViewControllerNs
 
-#endif // RVIZ_FIXED_Y_ORIENTATION_ORTHO_VIEW_CONTROLLER_H
+#endif // RVIZ_FIXED_Z_ORIENTATION_ORTHO_VIEW_CONTROLLER_H

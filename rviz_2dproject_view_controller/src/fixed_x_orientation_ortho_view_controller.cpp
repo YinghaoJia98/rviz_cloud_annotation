@@ -75,8 +75,14 @@ namespace FixedXOrientationOrthoViewControllerNs
     scale_property_ =
         new rviz::FloatProperty("Scale", 10, "How much to scale up the size of things in the scene.", this);
     angle_property_ = new rviz::FloatProperty("Angle", 0, "Angle around the X axis to rotate.", this);
+
+    x_property_ = new rviz::FloatProperty("X", 0, "X component of camera position.", this);
     y_property_ = new rviz::FloatProperty("Y", 0, "Y component of camera position.", this);
     z_property_ = new rviz::FloatProperty("Z", 0, "Z component of camera position.", this);
+    InvertDirection_ = new rviz::BoolProperty("Invert X Axis", false, "Invert camera's X axis for X-down environments/models.",
+                                              this, &FixedXOrientationOrthoViewController::InvertXAxis);
+
+    InvertDirectionInStdBool_ = false;
   }
 
   FixedXOrientationOrthoViewController::~FixedXOrientationOrthoViewController()
@@ -100,6 +106,7 @@ namespace FixedXOrientationOrthoViewControllerNs
   {
     scale_property_->setFloat(10);
     angle_property_->setFloat(0);
+    x_property_->setFloat(0);
     y_property_->setFloat(0);
     z_property_->setFloat(0);
   }
@@ -146,7 +153,7 @@ namespace FixedXOrientationOrthoViewControllerNs
     {
       setCursor(MoveXY);
       float scale = scale_property_->getFloat();
-      move(-diff_z / scale, -diff_y / scale);
+      move(diff_z / scale, diff_y / scale);
     }
     else if (event.right())
     {
@@ -179,17 +186,26 @@ namespace FixedXOrientationOrthoViewControllerNs
     camera_->setOrientation(
         Ogre::Quaternion(Ogre::Radian(angle_property_->getFloat()), Ogre::Vector3::UNIT_X));
 
-    camera_->setDirection(Ogre::Vector3::NEGATIVE_UNIT_X);
-    // std::cout << "camera orientation is " << camera_->getOrientation() << std::endl;
-    // std::cout << "camera real orientation is " << camera_->getRealOrientation() << std::endl;
-    // std::cout << "camera position is " << camera_->getPosition() << std::endl;
-    // std::cout << "camera real position is " << camera_->getRealPosition() << std::endl;
-    // std::cout << "camera direction is " << camera_->getDirection() << std::endl;
-    // std::cout << "camera RealDirection is " << camera_->getRealDirection() << std::endl;
-    // std::cout << "camera up is " << camera_->getUp() << std::endl;
-    // std::cout << "camera real up is " << camera_->getRealUp() << std::endl;
-    // std::cout << "camera right is " << camera_->getRight() << std::endl;
-    // std::cout << "camera real right is " << camera_->getRealRight() << std::endl;
+    if (!InvertDirectionInStdBool_)
+    {
+      camera_->setDirection(Ogre::Vector3::NEGATIVE_UNIT_X);
+    }
+    else
+    {
+      camera_->setDirection(Ogre::Vector3::UNIT_X);
+    }
+
+    // camera_->setDirection(Ogre::Vector3::NEGATIVE_UNIT_X);
+    //  std::cout << "camera orientation is " << camera_->getOrientation() << std::endl;
+    //  std::cout << "camera real orientation is " << camera_->getRealOrientation() << std::endl;
+    //  std::cout << "camera position is " << camera_->getPosition() << std::endl;
+    //  std::cout << "camera real position is " << camera_->getRealPosition() << std::endl;
+    //  std::cout << "camera direction is " << camera_->getDirection() << std::endl;
+    //  std::cout << "camera RealDirection is " << camera_->getRealDirection() << std::endl;
+    //  std::cout << "camera up is " << camera_->getUp() << std::endl;
+    //  std::cout << "camera real up is " << camera_->getRealUp() << std::endl;
+    //  std::cout << "camera right is " << camera_->getRight() << std::endl;
+    //  std::cout << "camera real right is " << camera_->getRealRight() << std::endl;
 
     // std::cout << "The whole camera is " << *camera_ << std::endl;
   }
@@ -203,6 +219,7 @@ namespace FixedXOrientationOrthoViewControllerNs
     {
       scale_property_->setFloat(source_ortho->scale_property_->getFloat());
       angle_property_->setFloat(source_ortho->angle_property_->getFloat());
+      x_property_->setFloat(source_ortho->x_property_->getFloat());
       y_property_->setFloat(source_ortho->y_property_->getFloat());
       z_property_->setFloat(source_ortho->z_property_->getFloat());
     }
@@ -261,11 +278,12 @@ namespace FixedXOrientationOrthoViewControllerNs
     // For Z, we use half of the far-clip distance set in
     // selection_context.cpp, so that the shader program which computes
     // depth can see equal distances above and below the Z=0 plane.
-    camera_->setPosition(100.0, y_property_->getFloat(), z_property_->getFloat());
+    camera_->setPosition(x_property_->getFloat(), y_property_->getFloat(), z_property_->getFloat());
   }
 
   void FixedXOrientationOrthoViewController::setPosition(const Ogre::Vector3 &pos_rel_target)
   {
+    x_property_->setFloat(pos_rel_target.x);
     y_property_->setFloat(pos_rel_target.y);
     z_property_->setFloat(pos_rel_target.z);
   }
@@ -275,6 +293,18 @@ namespace FixedXOrientationOrthoViewControllerNs
     float angle = angle_property_->getFloat();
     y_property_->add(dy * std::cos(angle) - dz * std::sin(angle));
     z_property_->add(dy * std::sin(angle) + dz * std::cos(angle));
+  }
+
+  void FixedXOrientationOrthoViewController::InvertXAxis()
+  {
+    if (InvertDirection_->getBool())
+    {
+      InvertDirectionInStdBool_ = true;
+    }
+    else
+    {
+      InvertDirectionInStdBool_ = false;
+    }
   }
 
 } // end namespace FixedXOrientationOrthoViewControllerNs

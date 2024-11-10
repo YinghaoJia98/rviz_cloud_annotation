@@ -89,9 +89,16 @@ namespace FixedXOrientationOrthoViewControllerNs
 
     rviz::FloatProperty *scale_property_;
     rviz::FloatProperty *angle_property_;
+    rviz::FloatProperty *x_property_;
     rviz::FloatProperty *y_property_;
     rviz::FloatProperty *z_property_;
     bool dragging_;
+
+    rviz::BoolProperty *InvertDirection_;
+    bool InvertDirectionInStdBool_;
+
+  private Q_SLOTS:
+    void InvertXAxis();
   };
 
 } // end namespace FixedXOrientationOrthoViewControllerNs

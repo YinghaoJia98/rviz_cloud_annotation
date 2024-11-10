@@ -47,6 +47,7 @@ add_library(rviz_2dproject_view_controller
   src/fixed_xyz_orientation_ortho_view_controller_base.cpp
   src/fixed_x_orientation_ortho_view_controller.cpp
   src/fixed_y_orientation_ortho_view_controller.cpp
+  src/fixed_z_orientation_ortho_view_controller.cpp
 )
 
 add_dependencies(rviz_2dproject_view_controller ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
