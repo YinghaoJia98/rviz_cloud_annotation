@@ -33,20 +33,21 @@
 #include <rviz/frame_position_tracking_view_controller.h>
 
 #include <OgreQuaternion.h>
+#include "fixed_xyz_orientation_ortho_view_controller_base.h"
 
-namespace rviz
-{
-  class FloatProperty;
-  class Shape;
-  class SceneNode;
-  void buildScaledOrthoMatrixForXProjection(Ogre::Matrix4 &proj,
-                                            float left,
-                                            float right,
-                                            float bottom,
-                                            float top,
-                                            float near,
-                                            float far);
-}
+// namespace rviz
+// {
+//   class FloatProperty;
+//   class Shape;
+//   class SceneNode;
+//   void buildScaledOrthoMatrixForXProjection(Ogre::Matrix4 &proj,
+//                                             float left,
+//                                             float right,
+//                                             float bottom,
+//                                             float top,
+//                                             float near,
+//                                             float far);
+// }
 
 namespace FixedXOrientationOrthoViewControllerNs
 {
