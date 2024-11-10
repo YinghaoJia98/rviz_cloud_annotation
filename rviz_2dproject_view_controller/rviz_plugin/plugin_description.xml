@@ -4,4 +4,10 @@
       View controller with projecting 3d into 2d.
     </description>
   </class>
+
+  <class name="rviz_2dproject_view_controller/ProjectFollowX" type="FixedXOrientationOrthoViewControllerNs::FixedXOrientationOrthoViewController" base_class_type="rviz::ViewController">
+    <description>
+      View controller with projecting 3d into 2d YZ plane.
+    </description>
+  </class>
 </library>

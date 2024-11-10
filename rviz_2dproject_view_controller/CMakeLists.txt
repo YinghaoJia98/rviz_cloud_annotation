@@ -44,6 +44,7 @@ include_directories(
 
 add_library(rviz_2dproject_view_controller
   src/rviz_2dproject_view_controller.cpp
+  src/fixed_x_orientation_ortho_view_controller.cpp
 )
 
 add_dependencies(rviz_2dproject_view_controller ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
