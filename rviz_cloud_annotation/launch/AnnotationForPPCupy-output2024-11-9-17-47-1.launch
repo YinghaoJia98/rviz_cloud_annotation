@@ -1,6 +1,6 @@
 <launch>
 
-<arg name="FileName" default="output2024-11-8-16-7-27" />
+<arg name="FileName" default="output2024-11-9-17-47-1" />
 
   <node pkg="rviz_cloud_annotation" type="rviz_cloud_annotation_node" name="rviz_cloud_annotation_node" output="screen">
     <param name="update_topic" type="string" value="/point_cloud" />

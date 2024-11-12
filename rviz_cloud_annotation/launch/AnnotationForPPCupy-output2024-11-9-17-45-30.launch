@@ -1,6 +1,6 @@
 <launch>
 
-<arg name="FileName" default="output2024-11-8-16-7-27" />
+<arg name="FileName" default="output2024-11-9-17-45-30" />
 
   <node pkg="rviz_cloud_annotation" type="rviz_cloud_annotation_node" name="rviz_cloud_annotation_node" output="screen">
     <param name="update_topic" type="string" value="/point_cloud" />
@@ -11,7 +11,7 @@
     <param name="annotation_cloud" type="string" value="$(find rviz_cloud_annotation)/data/$(arg FileName)_annotated.pcd" />
     <param name="label_names_filename" type="string" value="$(find rviz_cloud_annotation)/data/$(arg FileName).txt" />
 
-    <param name="point_size" type="double" value="0.07" />
+    <param name="point_size" type="double" value="0.1" />
 
     <param name="label_size" type="double" value="0.002" />
     <param name="neigh_search_type" type="int" value="2" />
